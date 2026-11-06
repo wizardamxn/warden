@@ -1,0 +1,188 @@
+/* Every colour in the website. Screens use these names only. Dark mode later is a second set of values. */
+:root {
+  --paper: #fbf7ee;
+  --glow: #fff1bf;
+  --shade: #f0e8d8;
+  --ink: #2b2620;
+  --ink-soft: #6b6255;
+  --hairline: #e3daca;
+  --input-line: #b8ad99;
+  --highlighter: #f6d364;
+  --gold: #edbe45;
+  --blue-pen: #1f4fa3;
+  --red-pen: #c7261f;
+  --frame: #1f1c18;
+  /* Paper you hold: the index card and the answer sheet. */
+  --card: #fffdf8;
+  --card-rule: #d5e0f0;
+  --card-red: #e39893;
+  --lift: 0 1px 2px rgba(43, 38, 32, 0.08), 0 12px 32px rgba(120, 96, 48, 0.1);
+
+  --serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --sans: var(--font-instrument-sans), "Segoe UI", Arial, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.6;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue-pen);
+  outline-offset: 2px;
+}
+
+/* The one soft light on each screen. */
+.glow {
+  position: absolute;
+  /* Follows the centred .wrap column, so on wide screens the light stays behind the video and the headline. */
+  left: calc(max(0px, (100% - 1400px) / 2) - 188px);
+  top: -120px;
+  width: 1040px;
+  height: 820px;
+  max-width: 100vw;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--glow), transparent);
+  /* It grows with each finished step while notes are being made: the light gets closer. */
+  transition:
+    transform 0.4s ease-out,
+    opacity 0.4s ease-out;
+}
+
+/* Read by screen readers, not shown. */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.page {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: clip;
+}
+
+.wrap {
+  position: relative;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 40px 96px;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  min-height: 48px;
+  font-family: var(--sans);
+  font-size: 16px;
+}
+
+.brand {
+  font-family: var(--serif);
+  font-size: 24px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.quiet {
+  min-height: 44px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: inherit;
+  cursor: pointer;
+}
+
+.quiet:hover {
+  color: var(--ink);
+}
+
+.link {
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+
+.primary {
+  min-height: 48px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary:hover {
+  filter: brightness(0.96);
+}
+
+.primary:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 38px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.sub {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+}
+
+.problem {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--red-pen);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .wrap {
+    padding: 16px 16px 64px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

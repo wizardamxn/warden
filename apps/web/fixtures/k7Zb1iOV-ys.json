@@ -1,0 +1,300 @@
+{
+  "video_id": "k7Zb1iOV-ys",
+  "title": "Arjuna NEET in English 2027 Biology 🚀 Perfect Start for Class 11 NEET Aspirants",
+  "channel": "PW NEET English",
+  "duration_seconds": 4119,
+  "source": "auto-captions",
+  "ncert_chapter": "Cell: The Unit of Life",
+  "tldr": "The lecture introduces the cell as the fundamental structural and functional unit of life. It covers the basics of protoplasm, the history of cell discovery, and the hierarchy of biological organization.",
+  "key_points": [
+    "A cell is the smallest unit capable of independent existence and carrying out essential life functions.",
+    "Protoplasm, consisting of cytoplasm and genetic material, is the living substance within a cell.",
+    "Robert Hooke coined the term cell and discovered dead cells in 1665.",
+    "Antonie van Leeuwenhoek was the first to observe and describe living cells.",
+    "The cell is the basic unit of organization from which tissues, organs, and systems are formed."
+  ],
+  "sections": [
+    {
+      "start_seconds": 155,
+      "title": "Study Strategy and Expectations",
+      "bullets": [
+        "Attend live lectures; use recorded sessions only for emergencies.",
+        "Take personal running notes during class alongside provided materials.",
+        "Read the NCERT textbook in detail after every class.",
+        "Use the NTA syllabus to track progress and stay motivated.",
+        "Address distractions and maintain discipline during the transition to Class 11."
+      ],
+      "exam_mark": "",
+      "exam_quote": ""
+    },
+    {
+      "start_seconds": 456,
+      "title": "Introduction to the Cell",
+      "bullets": [
+        "A cell is defined as the structural and functional unit of life.",
+        "Matter is composed of atoms; cells are the biological counterpart to the basic unit of life.",
+        "Protoplasm is the living content of a cell, comprising cytoplasm and genetic material.",
+        "Genetic material, primarily DNA, stores information necessary for cell function.",
+        "Cytoplasm serves as the site for metabolic and cellular activities.",
+        "Huxley referred to protoplasm as the physical basis of life."
+      ],
+      "exam_mark": "",
+      "exam_quote": ""
+    },
+    {
+      "start_seconds": 1031,
+      "title": "Prokaryotic vs Eukaryotic Cells",
+      "bullets": [
+        "Prokaryotes contain a primitive nucleus and lack membrane-bound organelles.",
+        "Eukaryotes possess a 'true' nucleus and complex organelles like mitochondria and lysosomes.",
+        "Both cell types share common components: cytoplasm and genetic material (DNA).",
+        "Karyon is the Greek term associated with the nucleus."
+      ],
+      "exam_mark": "",
+      "exam_quote": ""
+    },
+    {
+      "start_seconds": 1672,
+      "title": "Levels of Biological Organization",
+      "bullets": [
+        "Unicellular organisms, such as Amoeba or bacteria, consist of a single cell.",
+        "Multicellular organisms exhibit a hierarchy: cell to tissue, to organ, to organ system.",
+        "All living organisms are either unicellular or multicellular.",
+        "A zygote is the single-cell starting point for multicellular organisms."
+      ],
+      "exam_mark": "",
+      "exam_quote": ""
+    },
+    {
+      "start_seconds": 2313,
+      "title": "Fundamental Unit of Life",
+      "bullets": [
+        "Anything less than a complete cell structure cannot maintain independent existence.",
+        "No cell organelle can survive in isolation outside the cellular environment.",
+        "Cellular integrity is required to conduct essential chemical reactions for life."
+      ],
+      "exam_mark": "",
+      "exam_quote": ""
+    },
+    {
+      "start_seconds": 2501,
+      "title": "Viruses and Cell Theory",
+      "bullets": [
+        "Viruses are non-cellular or acellular entities.",
+        "Viruses consist of protein and nucleic acids (DNA or RNA) and are not considered living cells.",
+        "Viruses only show characteristics of life when they hijack a living host's machinery."
+      ],
+      "exam_mark": "",
+      "exam_quote": ""
+    },
+    {
+      "start_seconds": 2645,
+      "title": "History: Robert Hooke",
+      "bullets": [
+        "Robert Hooke, an English scientist, coined the term 'cell' in 1665.",
+        "He published his findings in the book 'Micrographia'.",
+        "He observed thin slices of oak tree bark under a simple microscope.",
+        "He described tiny, honeycomb-like compartments and named them 'cellula' (Latin for chamber).",
+        "The cells observed by Hooke were dead plant cell walls without protoplasm."
+      ],
+      "exam_mark": "",
+      "exam_quote": ""
+    },
+    {
+      "start_seconds": 2842,
+      "title": "Basic Definitions",
+      "bullets": [
+        "Father of Biology and Zoology: Aristotle.",
+        "Father of Botany: Theophrastus.",
+        "Study of cells is known as Cytology or Cell Biology."
+      ],
+      "exam_mark": "",
+      "exam_quote": ""
+    },
+    {
+      "start_seconds": 3340,
+      "title": "History: Antonie van Leeuwenhoek",
+      "bullets": [
+        "Antonie van Leeuwenhoek was a Dutch merchant who made a remarkable simple microscope.",
+        "He was the first to observe and describe living cells.",
+        "He observed various samples including bacteria, human sperm cells, and red blood cells.",
+        "He referred to these moving organisms as 'animalcules'."
+      ],
+      "exam_mark": "",
+      "exam_quote": ""
+    },
+    {
+      "start_seconds": 3785,
+      "title": "History: Robert Brown and Purkinje",
+      "bullets": [
+        "Robert Brown, a Scottish botanist, discovered the nucleus in 1831 using orchid root cells.",
+        "Felix Dujardin (1835) discovered a semi-fluid matrix in protozoan cells, calling it 'sarcode'.",
+        "Purkinje later renamed this semi-fluid matrix as 'protoplasm'."
+      ],
+      "exam_mark": "",
+      "exam_quote": ""
+    }
+  ],
+  "mnemonics": [
+    {
+      "topic": "Prokaryotic vs Eukaryotic",
+      "text": "P for Primitive (Prokaryote) and U for True (Eukaryote, from Eu=True, Karyon=Nucleus)."
+    }
+  ],
+  "glossary": [
+    {
+      "term": "Protoplasm",
+      "definition": "The living content of a cell consisting of cytoplasm and genetic material."
+    },
+    {
+      "term": "Cellula",
+      "definition": "Latin term meaning 'small chamber', the origin of the word 'cell'."
+    },
+    {
+      "term": "Animalcules",
+      "definition": "Term used by Leeuwenhoek to describe the moving living organisms he observed."
+    },
+    {
+      "term": "Sarcode",
+      "definition": "The original term given by Dujardin to the semi-fluid matrix now called protoplasm."
+    }
+  ],
+  "flashcards": [
+    {
+      "question": "What is the basic, structural, and functional unit of life?",
+      "answer": "Cell.",
+      "start_seconds": 481
+    },
+    {
+      "question": "What is the living content of a cell, comprising cytoplasm and genetic material?",
+      "answer": "Protoplasm.",
+      "start_seconds": 681
+    },
+    {
+      "question": "Who famously stated that 'protoplasm is the physical basis of life'?",
+      "answer": "Huxley.",
+      "start_seconds": 1224
+    },
+    {
+      "question": "What is the major genetic material in most organisms?",
+      "answer": "DNA.",
+      "start_seconds": 1558
+    },
+    {
+      "question": "Which organisms are capable of independent existence and can perform all essential functions of life?",
+      "answer": "Unicellular organisms.",
+      "start_seconds": 1731
+    },
+    {
+      "question": "What is the term for a non-cellular entity composed of protein and nucleic acid that is not considered living unless inside a host?",
+      "answer": "Virus.",
+      "start_seconds": 2561
+    },
+    {
+      "question": "Who introduced the term 'cell' in his book 'Micrographia' in 1665?",
+      "answer": "Robert Hooke.",
+      "start_seconds": 2671
+    },
+    {
+      "question": "Which scientist is recognized as the father of cytology for discovering the cell?",
+      "answer": "Robert Hooke.",
+      "start_seconds": 2890
+    },
+    {
+      "question": "What did Robert Hooke observe under a simple microscope when examining the bark of an oak tree?",
+      "answer": "Tiny compartments.",
+      "start_seconds": 3177
+    },
+    {
+      "question": "Who was the first scientist to observe free-living cells like bacteria and spermatozoa?",
+      "answer": "Anton van Leeuwenhoek.",
+      "start_seconds": 3413
+    },
+    {
+      "question": "Who discovered the nucleus in the root cells of an orchid plant in 1831?",
+      "answer": "Robert Brown.",
+      "start_seconds": 3807
+    }
+  ],
+  "quiz": [
+    {
+      "type": "direct",
+      "question": "Which English scientist coined the term 'cell' in 1665?",
+      "options": [
+        "Robert Brown",
+        "Anton van Leeuwenhoek",
+        "Robert Hooke",
+        "Dujardin"
+      ],
+      "answer_index": 2,
+      "explanation": "Robert Hooke coined the term 'cell' after observing thin slices of bottle cork (bark of an oak tree) under a simple microscope. Other options are incorrect as Robert Brown discovered the nucleus, and Anton van Leeuwenhoek was the first to observe live cells.",
+      "start_seconds": 2671
+    },
+    {
+      "type": "statement",
+      "question": "Regarding the structural basics of living organisms, consider the following statements:\nStatement I: All living organisms are composed of cells.\nStatement II: Anything less than a complete cell structure ensures independent living.",
+      "options": [
+        "Statement I is correct and Statement II is incorrect",
+        "Statement I is incorrect and Statement II is correct",
+        "Both statements are correct",
+        "Both statements are incorrect"
+      ],
+      "answer_index": 0,
+      "explanation": "All living organisms are made up of cells, which is the basic unit of life. However, anything less than a complete cell does not ensure independent existence, making Statement II incorrect. Both are not correct.",
+      "start_seconds": 2137
+    },
+    {
+      "type": "assertion-reason",
+      "question": "Assertion (A): Protoplasm is considered the physical basis of life.\nReason (R): It is a combination of cytoplasm and genetic material where all metabolic and cellular activities occur.",
+      "options": [
+        "Both A and R are true and R is the correct explanation of A",
+        "Both A and R are true but R is not the correct explanation of A",
+        "A is true but R is false",
+        "A is false but R is true"
+      ],
+      "answer_index": 0,
+      "explanation": "Protoplasm is defined as the physical basis of life because it contains the necessary components—cytoplasm for metabolic reactions and genetic material for information storage—which together sustain life.",
+      "start_seconds": 1224
+    },
+    {
+      "type": "match",
+      "question": "Match the following scientists with their significant contribution to cell biology:\nList I\nA. Robert Brown\nB. Anton van Leeuwenhoek\nC. Dujardin\nD. Purkinje\n\nList II\nI. Named 'protoplasm'\nII. Discovered the nucleus\nIII. First observed live cells\nIV. Discovered 'sarcode'",
+      "options": [
+        "A-II, B-III, C-IV, D-I",
+        "A-III, B-II, C-I, D-IV",
+        "A-II, B-IV, C-III, D-I",
+        "A-I, B-II, C-IV, D-III"
+      ],
+      "answer_index": 0,
+      "explanation": "Robert Brown discovered the nucleus (1831). Anton van Leeuwenhoek first observed live cells (such as bacteria and sperm). Dujardin discovered a semifluid matrix in protozoa and named it 'sarcode'. Purkinje later named this material 'protoplasm'.",
+      "start_seconds": 3788
+    },
+    {
+      "type": "direct",
+      "question": "What term did Anton van Leeuwenhoek use to describe the moving microscopic creatures he observed?",
+      "options": [
+        "Cellulae",
+        "Animalcules",
+        "Sarcode",
+        "Protoplasm"
+      ],
+      "answer_index": 1,
+      "explanation": "Anton van Leeuwenhoek observed various moving organisms under his microscope and named them 'animalcules'. Cellulae was the term used by Robert Hooke, while Sarcode and Protoplasm are terms related to the internal fluid of cells.",
+      "start_seconds": 3501
+    },
+    {
+      "type": "statement",
+      "question": "Consider the following statements about prokaryotic and eukaryotic cells:\nStatement I: Prokaryotic cells contain a well-defined nucleus.\nStatement II: Both prokaryotic and eukaryotic cells contain cytoplasm and genetic material.",
+      "options": [
+        "Statement I is correct and Statement II is incorrect",
+        "Statement I is incorrect and Statement II is correct",
+        "Both statements are correct",
+        "Both statements are incorrect"
+      ],
+      "answer_index": 1,
+      "explanation": "Prokaryotic cells have a primitive nucleus, whereas eukaryotic cells have a 'true' well-defined nucleus, making Statement I incorrect. Both cell types share cytoplasm and genetic material (DNA), making Statement II correct.",
+      "start_seconds": 1134
+    }
+  ],
+  "failed_steps": []
+}

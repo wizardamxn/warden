@@ -1,0 +1,24 @@
+# Postgres for local development only. Supabase takes its place when deployed.
+# Port 55432 stays clear of a normal PostgreSQL install on 5432, and it's only
+# open to this computer, so the throwaway password is fine.
+name: warden
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: warden
+      POSTGRES_PASSWORD: warden
+      POSTGRES_DB: warden
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U warden -d warden"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  postgres:

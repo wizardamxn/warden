@@ -1,0 +1,376 @@
+/* Home: the paste form */
+.home {
+  max-width: 880px;
+  padding: 120px 0 0 96px;
+}
+
+.home h1 {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.home .lead {
+  margin: 0 0 40px;
+  font-size: 24px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+.paste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 24px;
+}
+
+.paste label {
+  flex: 1 1 360px;
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+
+.paste input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-bottom: 1.5px solid var(--input-line);
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 19px;
+}
+
+.home .status {
+  margin-top: 24px;
+  max-width: 640px;
+}
+
+/* Note page */
+.cols {
+  display: grid;
+  grid-template-columns: minmax(520px, 1fr) minmax(0, 680px);
+  gap: 56px;
+  align-items: start;
+  margin-top: 16px;
+}
+
+.cols > * {
+  min-width: 0;
+}
+
+.left {
+  position: sticky;
+  top: 24px;
+}
+
+/* Above .edges: focus mode's shade must not cover YouTube's player. */
+.left,
+.player {
+  z-index: 1;
+}
+
+.player {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--frame);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.player iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.lecture {
+  margin-top: 24px;
+  transition: opacity 0.3s ease-out;
+}
+
+.lecture .sub + .sub {
+  margin-top: 4px;
+}
+
+.blocked {
+  margin: 16px 0 0;
+  font-family: var(--sans);
+  font-size: 16px;
+}
+
+.rest {
+  transition: opacity 0.3s ease-out;
+}
+
+/* Before the note exists: starts where the note's text will start. */
+.waiting {
+  margin: 8px 0 0 96px;
+  max-width: 62ch;
+}
+
+.waiting .primary {
+  margin-top: 24px;
+}
+
+.again {
+  min-height: 0;
+  padding: 0;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tldr {
+  margin: 8px 0 24px 96px;
+  max-width: 62ch;
+  font-size: 24px;
+  line-height: 1.4;
+}
+
+.points {
+  margin: 0 0 48px 96px;
+  padding: 0 0 0 20px;
+  max-width: 62ch;
+}
+
+.points li,
+.sec li {
+  margin-bottom: 6px;
+}
+
+.sec {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  margin-bottom: 48px;
+  transition: opacity 0.3s ease-out;
+}
+
+/* Timestamps hang in the margin, like notes in a textbook. */
+.ts {
+  display: block;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font-family: var(--sans);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  text-decoration: none;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.ts:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* The teacher's red pen. */
+.exam {
+  margin: 0;
+  width: 76px;
+  color: var(--red-pen);
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.3;
+  transform: rotate(-3deg);
+  transform-origin: left top;
+}
+
+.sec h2,
+.extra h2 {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.3;
+  margin: 6px 0 12px;
+}
+
+.sec h2 {
+  position: relative;
+  display: inline-block;
+  scroll-margin-top: 96px;
+}
+
+.tx {
+  position: relative;
+}
+
+/* The highlighter stroke, swept under the heading of the playing section. */
+.stroke {
+  position: absolute;
+  left: -6px;
+  right: -8px;
+  bottom: 1px;
+  height: 46%;
+  background: var(--highlighter);
+  opacity: 0.7;
+  border-radius: 3px 8px 4px 7px;
+  transform: scaleX(0) rotate(-0.4deg);
+  transform-origin: left;
+  transition: transform 0.35s ease-out;
+}
+
+.sec[aria-current] .stroke {
+  transform: scaleX(1) rotate(-0.4deg);
+}
+
+.sec ul {
+  margin: 0;
+  padding: 0 0 0 20px;
+  max-width: 62ch;
+}
+
+.extra {
+  margin: 0 0 48px 96px;
+  max-width: 62ch;
+}
+
+.extra dl {
+  margin: 0;
+}
+
+.extra dt {
+  font-weight: 500;
+}
+
+.extra dd {
+  margin: 0 0 12px;
+}
+
+/* Focus mode: the light narrows. */
+.edges {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(ellipse at 50% 42%, transparent 58%, var(--shade) 100%);
+  transition: opacity 0.3s ease-out;
+}
+
+.nav .brand {
+  transition: opacity 0.3s ease-out;
+}
+
+.focus .nav .brand {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.focus .rest,
+.focus .lecture {
+  opacity: 0.12;
+}
+
+.focus .sec {
+  opacity: 0.2;
+}
+
+.focus .sec[aria-current] {
+  opacity: 1;
+}
+
+.focus .edges {
+  opacity: 1;
+}
+
+.push {
+  margin-left: auto;
+}
+
+/* Notes, Flashcards, Answer sheet: the view on screen is ink and underlined, so it's not told by colour alone. */
+.nav .brand {
+  margin-right: 16px;
+}
+
+.view[aria-current="true"] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 8px;
+}
+
+.view {
+  transition: opacity 0.3s ease-out;
+}
+
+.focus .view {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* The end of the notes, leading into testing yourself. */
+.next {
+  margin: 0 0 48px 96px;
+  max-width: 62ch;
+}
+
+.next p {
+  margin: 0 0 16px;
+  font-size: 24px;
+  line-height: 1.4;
+}
+
+/* Flashcards or quiz still being made, or failed. */
+.not-ready {
+  margin-top: 8px;
+  max-width: 62ch;
+}
+
+.not-ready h2,
+.sheet-head h2 {
+  margin: 0 0 8px;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.not-ready .primary {
+  margin-top: 24px;
+}
+
+/* Once the answer sheet is marked, the light leaves the video for the score (see study.css). */
+.page:has(.score:not([hidden] *)) > .glow {
+  opacity: 0;
+}
+
+@media (max-width: 1200px) {
+  .cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .left {
+    position: static;
+    max-width: 680px;
+  }
+}
+
+@media (max-width: 700px) {
+  .home {
+    padding: 48px 0 0;
+  }
+
+  .home h1 {
+    font-size: 38px;
+  }
+
+  .sec {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .waiting,
+  .tldr,
+  .points,
+  .extra,
+  .next {
+    margin-left: 0;
+  }
+}

@@ -1,0 +1,399 @@
+/* "Watch 05:40": back to the moment in the video. */
+.watch {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* Flashcards: a paper index card, the one thing on the page that's centred. */
+.cards {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.stack {
+  perspective: 1600px;
+}
+
+.card {
+  display: grid;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease-out;
+}
+
+.card.turned {
+  transform: rotateY(180deg);
+}
+
+/* Both sides share one grid cell, so the card is as tall as its longer side. 5 by 3, like a real card. */
+.face {
+  grid-area: 1 / 1;
+  display: block;
+  min-height: 360px;
+  padding: 0 40px 32px;
+  border-radius: 2px;
+  box-shadow: var(--lift);
+  /* One red line under the heading, then faint blue rules every 32 px that the text sits on. */
+  background-color: var(--card);
+  background-image:
+    linear-gradient(to bottom, transparent 63px, var(--card-red) 63px 65px, transparent 65px),
+    repeating-linear-gradient(to bottom, transparent 0 31px, var(--card-rule) 31px 32px);
+  background-position:
+    0 0,
+    0 65px;
+  background-size:
+    100% 100%,
+    100% calc(100% - 65px);
+  background-repeat: no-repeat;
+  backface-visibility: hidden;
+}
+
+.face.back {
+  transform: rotateY(180deg);
+}
+
+.side {
+  display: block;
+  height: 65px;
+  padding-top: 30px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.words {
+  display: block;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.card .words {
+  padding-top: 2px;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.turn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  font-family: var(--sans);
+  font-size: 16px;
+}
+
+.turn .quiet[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.turn .sub {
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  font-size: 13px;
+}
+
+.cards .next {
+  margin: 40px 0 0;
+}
+
+/* The answer sheet: an OMR sheet, filled in blue pen and marked in red. */
+.sheet-head {
+  position: relative;
+  isolation: isolate;
+  margin: 8px 0 32px;
+}
+
+.sheet-head h2:focus {
+  outline: none;
+}
+
+.sheet-head .score {
+  position: relative;
+  display: inline-block;
+  font-size: 48px;
+  font-variant-numeric: tabular-nums;
+}
+
+.score .stroke {
+  transform: scaleX(1) rotate(-0.4deg);
+}
+
+/* The light, moved from the video to sit behind the score. */
+.score-glow {
+  position: absolute;
+  z-index: -1;
+  left: -260px;
+  top: -220px;
+  width: 760px;
+  height: 520px;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--glow), transparent);
+}
+
+.omr {
+  position: relative;
+  padding: 32px 32px 32px 72px;
+  background: var(--card);
+  box-shadow: var(--lift);
+}
+
+/* The black timing marks down the edge of a real OMR sheet. */
+.track {
+  position: absolute;
+  left: 20px;
+  top: 32px;
+  bottom: 32px;
+  width: 18px;
+  background: repeating-linear-gradient(to bottom, var(--ink) 0 8px, transparent 8px 40px);
+}
+
+.q {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  column-gap: 16px;
+  padding: 24px 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.track + .q {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.qtext {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.qnum {
+  flex: none;
+  min-width: 20px;
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+.qbody {
+  min-width: 0;
+}
+
+.lists {
+  margin-top: 12px;
+  border-collapse: collapse;
+}
+
+.lists th {
+  padding: 0 32px 4px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.lists td {
+  padding: 4px 32px 0 0;
+  vertical-align: top;
+}
+
+/* The teacher's red pen in the margin. Words under the number, so it's never colour alone. */
+.mark {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  margin: 0;
+  color: var(--red-pen);
+  font-size: 30px;
+  font-style: italic;
+  line-height: 1;
+  text-align: center;
+  transform: rotate(-5deg);
+}
+
+.mark span {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.clear {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  align-self: start;
+  min-height: 32px;
+  padding: 0;
+  font-family: var(--sans);
+  font-size: 16px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.opts,
+.why {
+  grid-column: 1 / -1;
+  padding-left: 32px;
+}
+
+.opt {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 44px;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.opt:has(input:disabled) {
+  cursor: default;
+}
+
+/* An OMR bubble. Filling it is the blue pen. */
+.bubble {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 24px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.bubble::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 48% 52% 50% 46% / 54% 46% 52% 48%;
+  background: var(--blue-pen);
+  opacity: 0;
+  transform: scale(0.3) rotate(-6deg);
+  transition:
+    transform 0.18s ease-out,
+    opacity 0.18s ease-out;
+}
+
+.opt input:checked + .bubble::after {
+  opacity: 1;
+  transform: scale(1) rotate(-6deg);
+}
+
+.opt:hover input:enabled + .bubble {
+  border-color: var(--blue-pen);
+  color: var(--blue-pen);
+}
+
+.opt input:focus-visible + .bubble {
+  outline: 2px solid var(--blue-pen);
+  outline-offset: 3px;
+}
+
+.opt .tx {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* The highlighter on the right answer, line by line like a real marker. */
+.opt.right .tx {
+  margin: 0 -4px;
+  padding: 0 4px;
+  background: linear-gradient(transparent 52%, color-mix(in srgb, var(--highlighter) 70%, transparent) 52%);
+  box-decoration-break: clone;
+}
+
+.opt.wrong .tx {
+  text-decoration: line-through;
+  text-decoration-color: var(--red-pen);
+  text-decoration-thickness: 1.5px;
+}
+
+.verdict {
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.opt.wrong .verdict {
+  color: var(--red-pen);
+}
+
+.why {
+  margin-top: 8px;
+}
+
+.why p {
+  margin: 0 0 4px;
+  max-width: 62ch;
+}
+
+.sheet-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  margin-top: 32px;
+}
+
+@media (max-width: 700px) {
+  .face {
+    min-height: 280px;
+    padding: 0 20px 24px;
+  }
+
+  .omr {
+    padding: 24px 16px 24px 44px;
+  }
+
+  .track {
+    left: 12px;
+    width: 14px;
+  }
+
+  .q {
+    grid-template-columns: minmax(0, 1fr) 48px;
+    column-gap: 8px;
+  }
+
+  .opts,
+  .why {
+    padding-left: 0;
+  }
+
+  .lists th,
+  .lists td {
+    padding-right: 16px;
+  }
+}
