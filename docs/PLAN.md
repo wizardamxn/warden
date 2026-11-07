@@ -10,7 +10,7 @@ _Last updated: 2026-10-31_
 
 | Area | Decision | Why |
 |---|---|---|
-| Cohort | **NEET** | Largest lecture-watching cohort, obsessive note-makers. Engine stays exam-agnostic; templates and quiz style are NEET. |
+| Cohort | **Anyone studying from YouTube lectures** | A universal study helper, not tied to one exam. Changed 2026-11-08: it started as NEET-only (largest lecture-watching cohort), and templates (NEET first, plus General) handle the difference between exams. |
 | Source | **YouTube links only** | No paid-course capture, no extension. Legally boring. |
 | Transcript | **YouTube captions for now** | No Whisper headache to start. If captions turn out not to be good enough, add self-hosted Whisper (small/medium). |
 | Surface | **Desktop web app first** | Paste a link → embedded player with notes beside it, built for laptop screens. Phone layout comes later. No app store, no extension. |
@@ -47,13 +47,14 @@ _Last updated: 2026-10-31_
 3. **Web app.** Done locally. Player + synced notes.
 4. **Flashcards + quiz screens.** Built, not tested yet.
 5. **Revise tab.**
-6. **Accounts + daily limit.**
+6. **Accounts + daily limit.** The student picks a template when they sign up. They can switch it in settings later, for new notes only.
+7. **Templates.** NEET (today's prompts) and General. The worker reads the student's template from the database, and finished notes are reused per video and template.
 
 ---
 
 ## Done means
 
-10 NEET students use it on their own lectures for a week, and at least a few come back to the Revise tab unprompted.
+10 students use it on their own lectures for a week, and at least a few come back to the Revise tab unprompted.
 
 That's the signal the learning loop works. Then — and only then — marketing.
 

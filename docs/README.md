@@ -7,3 +7,4 @@ Index of every doc in this repo.
 - [milestones/](milestones/README.md): PLAN.md and SUMMARY.md per milestone.
 - [DESIGN.md](DESIGN.md): design guide. Study and visual research, and the rules every screen follows.
 - [TECH_DEBT.md](TECH_DEBT.md): known problems left for later.
+- [IDEAS.md](IDEAS.md): ideas not decided yet.

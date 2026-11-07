@@ -17,7 +17,7 @@ const instrumentSans = Instrument_Sans({
 
 export const metadata: Metadata = {
   title: "Warden",
-  description: "Paste a NEET lecture link and get notes beside the video.",
+  description: "Paste a YouTube lecture link and get notes beside the video, then test yourself.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
