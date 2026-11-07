@@ -1,8 +1,89 @@
-# Warden
+```text
+██╗    ██╗ █████╗ ██████╗ ██████╗ ███████╗███╗   ██╗
+██║    ██║██╔══██╗██╔══██╗██╔══██╗██╔════╝████╗  ██║
+██║ █╗ ██║███████║██████╔╝██║  ██║█████╗  ██╔██╗ ██║
+██║███╗██║██╔══██║██╔══██╗██║  ██║██╔══╝  ██║╚██╗██║
+╚███╔███╔╝██║  ██║██║  ██║██████╔╝███████╗██║ ╚████║
+ ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═══╝
+```
 
-Paste a NEET lecture link, get notes beside the video, then test yourself.
+**Paste a NEET lecture. Get notes beside the video, then test yourself.**
 
-Full plan, MVP scope and build order: [docs/PLAN.md](docs/PLAN.md).
+Watching a lecture feels like learning more than it is. Warden turns a YouTube lecture into revision notes that follow the video as it plays, then flashcards and an OMR answer sheet built from the same lecture. Every card and question links back to the moment it came from.
+
+```text
+┌─────────────────────────────────┬────────────────────────────────────────┐
+│                                 │ 26:31  Levels of organisation          │
+│              ▶ play             │        ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀         │
+│                                 │        · cell → tissue → organ         │
+│ ━━━━━━━━━━━━━━━━━○───── 26:40   │                                        │
+│                                 │ 44:05  History: Robert Hooke           │
+│ Cell: The Unit of Life          │        · coined "cell" in 1665         │
+├─────────────────────────────────┴────────────────────────────────────────┤
+│ notes · flashcards · answer sheet          (1) (2) (█) (4)    +4 right   │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+## How a lecture becomes study material
+
+```mermaid
+flowchart LR
+    link[YouTube link] --> api[Go API]
+    api --> jobs[(Postgres<br/>job steps)]
+    jobs --> worker[Go worker]
+    worker --> captions[yt-dlp captions]
+    captions --> notes[Gemini: notes]
+    captions --> cards[Gemini: flashcards]
+    captions --> quiz[Gemini: NEET quiz]
+    notes & cards & quiz --> check{Go checks<br/>every answer}
+    check -->|pass| jobs
+    check -->|fail once| fix[one fix-up call]
+    fix --> check
+    jobs --> api --> web[Next.js website]
+```
+
+- **Checked, not trusted.** Gemini's answers are untrusted input. Go checks every timestamp is a real transcript line, every word is English, every quiz has four distinct options and a real answer, and every "asked in NEET" mark quotes the teacher's actual words.
+- **Saved on every step.** Captions, notes, flashcards and quiz are each saved with their own marker. A crash or a retry only runs what's missing, and a lecture someone already made comes back in milliseconds with no AI call.
+- **No AI SDK.** Plain HTTP from Go to Gemini, with retries when Google is busy and a clean stop when the daily quota runs out.
+
+## What a student sees
+
+| | |
+|---|---|
+| **Synced notes** | Short revision bullets, NCERT chapter name, mnemonics and a glossary. A yellow highlighter sweeps under the section being played. |
+| **Focus mode** | One key narrows the light: everything except the video and the playing section falls into shade. |
+| **Flashcards** | A paper index card that flips. One fact per card, each with "Watch 05:40". |
+| **OMR answer sheet** | Blue-pen bubbles, scored +4 / −1 / 0 like the real paper. Direct, statement, assertion-reason and match-the-column questions. |
+| **Honest progress** | The page shows the real step being worked on, and notes appear the moment they're ready. |
+
+## Status
+
+```text
+  1  link → notes                ████████████  done
+  2  NEET notes, cards, quiz     ████████████  done
+  3  website + synced notes      ████████████  done
+  ·  Go API, jobs, logger        ████████████  done
+  4  flashcards + answer sheet   ██████████░░  built, untested
+  5  revise tab                  ░░░░░░░░░░░░
+  6  accounts + daily limit      ░░░░░░░░░░░░
+```
+
+## Run it locally
+
+Needs Go, Node, yt-dlp, Docker Desktop and a Gemini key in `server/.env` as `GEMINI_API_KEY=...`.
+
+```powershell
+.\scripts\dev.ps1        # Postgres in Docker, migrations, API and worker, logs in this terminal
+cd apps\web
+npm install
+npm run dev              # http://127.0.0.1:3000
+```
+
+The API has no login yet, so it only listens on `127.0.0.1`. Don't expose it until accounts exist.
+
+Full plan, MVP scope and build order: [docs/PLAN.md](docs/PLAN.md). Design rules: [docs/DESIGN.md](docs/DESIGN.md). Milestones: [docs/milestones](docs/milestones/README.md).
+
+---
 
 ## Decided so far
 
@@ -97,3 +178,12 @@ SOMETHING LIKE WE CAN GRAB ALL THE PAST QUESTIONS FROM NEET AND THEN WHEN WE WAT
 HMM LETS THINK LETS THINK. 
 
 AN AGENT!? HMM WILL THINK LATER.
+
+
+Maybe we can create a public repository or library type shit so people can like go and well access without p;pasting links? 
+
+AND like we don't want to focus on NEET only but JEE and other gormint exzams and like coders as well..??
+
+hmm lets think
+
+w
