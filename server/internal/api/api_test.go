@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"warden/internal/auth"
 	"warden/internal/core"
 )
 
@@ -19,8 +20,19 @@ func send(t *testing.T, webOrigin, method, path, origin, body string) *httptest.
 		request.Header.Set("Origin", origin)
 	}
 	response := httptest.NewRecorder()
-	New(nil, webOrigin).ServeHTTP(response, request)
+	New(nil, auth.New(nil), core.Settings{WebOrigin: webOrigin}).ServeHTTP(response, request)
 	return response
+}
+
+func errorOf(t *testing.T, response *httptest.ResponseRecorder) string {
+	t.Helper()
+	var parsed struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &parsed); err != nil {
+		t.Fatalf("body = %s", response.Body)
+	}
+	return parsed.Error
 }
 
 func TestHealthz(t *testing.T) {
@@ -33,30 +45,68 @@ func TestHealthz(t *testing.T) {
 	}
 }
 
-func TestCreateNoteRejectsBadInput(t *testing.T) {
+func TestRoutesNeedALogin(t *testing.T) {
+	tests := []struct{ method, path string }{
+		{http.MethodGet, "/v1/me"},
+		{http.MethodPatch, "/v1/me"},
+		{http.MethodPost, "/v1/notes"},
+		{http.MethodGet, "/v1/notes/VjnHhmST8GY"},
+		{http.MethodPost, "/v1/notes/VjnHhmST8GY/retry"},
+		{http.MethodGet, "/v1/library"},
+		{http.MethodGet, "/v1/revise"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.method+" "+tt.path, func(t *testing.T) {
+			response := send(t, core.LocalWebOrigin, tt.method, tt.path, "", `{"url":"https://youtu.be/VjnHhmST8GY"}`)
+			if response.Code != http.StatusUnauthorized || errorOf(t, response) != "Log in to continue." {
+				t.Errorf("%d %s", response.Code, response.Body)
+			}
+		})
+	}
+}
+
+func TestSignupRejectsBadInput(t *testing.T) {
 	tests := []struct {
 		name string
 		body string
+		want string
 	}{
-		{name: "not a youtube link", body: `{"url":"https://example.com/video"}`},
-		{name: "no link", body: `{}`},
-		{name: "not json", body: `hello`},
-		{name: "empty", body: ``},
-		{name: "too big", body: `{"url":"` + strings.Repeat("a", maxBodyBytes) + `"}`},
+		{name: "not json", body: `hello`, want: "Send an email"},
+		{name: "too big", body: `{"email":"` + strings.Repeat("a", maxBodyBytes) + `"}`, want: "Send an email"},
+		{name: "no email", body: `{"password":"long enough","template":"neet"}`, want: "email address"},
+		{name: "not an email", body: `{"email":"student","password":"long enough","template":"neet"}`, want: "email address"},
+		{name: "a name and an email", body: `{"email":"Student <a@b.com>","password":"long enough","template":"neet"}`, want: "email address"},
+		{name: "no dot in the domain", body: `{"email":"a@b","password":"long enough","template":"neet"}`, want: "email address"},
+		{name: "short password", body: `{"email":"a@b.com","password":"1234567","template":"neet"}`, want: "8 to 128"},
+		{name: "long password", body: `{"email":"a@b.com","password":"` + strings.Repeat("a", 129) + `","template":"neet"}`, want: "8 to 128"},
+		{name: "unknown template", body: `{"email":"a@b.com","password":"long enough","template":"jee"}`, want: "NEET or General"},
+		{name: "no template", body: `{"email":"a@b.com","password":"long enough"}`, want: "NEET or General"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			response := send(t, core.LocalWebOrigin, http.MethodPost, "/v1/notes", "", tt.body)
-			if response.Code != http.StatusBadRequest {
-				t.Errorf("status = %d", response.Code)
+			response := send(t, core.LocalWebOrigin, http.MethodPost, "/v1/auth/signup", "", tt.body)
+			if response.Code != http.StatusBadRequest || !strings.Contains(errorOf(t, response), tt.want) {
+				t.Errorf("%d %s", response.Code, response.Body)
 			}
-			var parsed struct {
-				Error string `json:"error"`
-			}
-			if err := json.Unmarshal(response.Body.Bytes(), &parsed); err != nil || parsed.Error == "" {
-				t.Errorf("body = %s", response.Body)
+			if response.Header().Get("Set-Cookie") != "" {
+				t.Error("a failed signup must not set a cookie")
 			}
 		})
+	}
+}
+
+func TestLogoutWithoutASessionClearsTheCookie(t *testing.T) {
+	response := send(t, core.LocalWebOrigin, http.MethodPost, "/v1/auth/logout", "", "")
+	cookie := response.Header().Get("Set-Cookie")
+	if response.Code != http.StatusNoContent || !strings.Contains(cookie, "warden_session=;") || !strings.Contains(cookie, "Max-Age=0") {
+		t.Errorf("%d %q", response.Code, cookie)
+	}
+}
+
+func TestSampleWithoutOne(t *testing.T) {
+	response := send(t, core.LocalWebOrigin, http.MethodGet, "/v1/sample", "", "")
+	if response.Code != http.StatusNotFound || errorOf(t, response) == "" {
+		t.Errorf("%d %s", response.Code, response.Body)
 	}
 }
 
@@ -77,12 +127,22 @@ func TestOrigins(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			response := send(t, tt.webOrigin, http.MethodOptions, "/v1/notes", tt.origin, "")
+			response := send(t, tt.webOrigin, http.MethodOptions, "/v1/me", tt.origin, "")
 			if response.Code != tt.wantCode {
 				t.Errorf("status = %d, want %d", response.Code, tt.wantCode)
 			}
 			if got := response.Header().Get("Access-Control-Allow-Origin"); got != tt.wantAllow {
 				t.Errorf("allowed origin = %q, want %q", got, tt.wantAllow)
+			}
+			wantCredentials := ""
+			if tt.wantAllow != "" {
+				wantCredentials = "true"
+			}
+			if got := response.Header().Get("Access-Control-Allow-Credentials"); got != wantCredentials {
+				t.Errorf("allow credentials = %q, want %q", got, wantCredentials)
+			}
+			if tt.wantCode == http.StatusNoContent && !strings.Contains(response.Header().Get("Access-Control-Allow-Methods"), "PATCH") {
+				t.Errorf("methods = %q", response.Header().Get("Access-Control-Allow-Methods"))
 			}
 		})
 	}
@@ -90,8 +150,54 @@ func TestOrigins(t *testing.T) {
 
 func TestOtherSitesCannotPost(t *testing.T) {
 	// A plain form-style post skips the browser's preflight, so this must be refused outright.
-	response := send(t, core.LocalWebOrigin, http.MethodPost, "/v1/notes", "https://evil.example", `{"url":"https://youtu.be/VjnHhmST8GY"}`)
-	if response.Code != http.StatusForbidden {
-		t.Errorf("status = %d", response.Code)
+	for _, path := range []string{"/v1/notes", "/v1/auth/login", "/v1/auth/signup"} {
+		response := send(t, core.LocalWebOrigin, http.MethodPost, path, "https://evil.example", `{"url":"https://youtu.be/VjnHhmST8GY"}`)
+		if response.Code != http.StatusForbidden {
+			t.Errorf("%s: status = %d", path, response.Code)
+		}
+	}
+}
+
+func TestSessionCookie(t *testing.T) {
+	tests := []struct {
+		host       string
+		wantSecure bool
+	}{
+		{"127.0.0.1:8080", false},
+		{"localhost:8080", false},
+		{"api.warden.example", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.host, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, "/v1/auth/login", nil)
+			request.Host = tt.host
+			cookie := sessionCookieFor(request, "token", 60)
+			if cookie.Secure != tt.wantSecure || !cookie.HttpOnly || cookie.SameSite != http.SameSiteLaxMode || cookie.Path != "/" || cookie.Name != "warden_session" {
+				t.Errorf("cookie = %+v", cookie)
+			}
+		})
+	}
+}
+
+func TestClientIP(t *testing.T) {
+	tests := []struct {
+		name, remote, header, want string
+	}{
+		{"direct", "203.0.113.5:4000", "", "203.0.113.5"},
+		{"a stranger can't pick their address", "203.0.113.5:4000", "198.51.100.1", "203.0.113.5"},
+		{"through the tunnel", "127.0.0.1:4000", "198.51.100.1", "198.51.100.1"},
+		{"tunnel header that isn't an address", "127.0.0.1:4000", "nonsense", "127.0.0.1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, "/v1/auth/login", nil)
+			request.RemoteAddr = tt.remote
+			if tt.header != "" {
+				request.Header.Set("CF-Connecting-IP", tt.header)
+			}
+			if got := clientIP(request); got != tt.want {
+				t.Errorf("got %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

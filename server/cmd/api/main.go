@@ -1,5 +1,6 @@
-// The API program answers the website. It has no login yet, so it listens on
-// 127.0.0.1 only and must not be made public until step 6 (accounts) is built.
+// The API program answers the website. It listens on 127.0.0.1 by default,
+// where Cloudflare Tunnel reaches it. See internal/api for what's still
+// missing before it goes public.
 package main
 
 import (
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"warden/internal/api"
+	"warden/internal/auth"
 	"warden/internal/core"
 	"warden/internal/jobs"
 )
@@ -46,7 +48,7 @@ func run() error {
 
 	server := &http.Server{
 		Addr:              settings.APIAddr,
-		Handler:           api.New(jobs.New(db), settings.WebOrigin),
+		Handler:           api.New(jobs.New(db), auth.New(db), settings),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      30 * time.Second,
@@ -55,7 +57,8 @@ func run() error {
 	}
 	failed := make(chan error, 1)
 	go func() { failed <- server.ListenAndServe() }()
-	slog.Info("api started", "addr", settings.APIAddr, "web_origin", settings.WebOrigin)
+	slog.Info("api started", "addr", settings.APIAddr, "web_origin", settings.WebOrigin,
+		"total_daily_cap", settings.TotalDailyCap, "sample_video_id", settings.SampleVideoID)
 
 	select {
 	case err := <-failed:

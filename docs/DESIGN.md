@@ -63,7 +63,7 @@ What premium products do instead (Linear, Readwise Reader, Stripe Press):
 - Red pen `#C7261F`: wrong answers and the teacher's exam marks in the margin ("Asked 2018, 2024"). Only shown when the teacher really said it.
 - Flashcards: a bright index card (`#FFFDF8`) with faint blue rules and one red line, softly lifted off the paper.
 - Video frame: stays dark (`#1F1C18`); videos are dark.
-- All colours are named theme values in one place (dark mode plugs in later).
+- All colours are named theme values in one place. Dark mode (2026-11-08) is the same desk at night: warm near-black paper, a dim lamp for the glow, cards a little lighter than the desk instead of shadowed, pens lighter and less saturated, and a darker highlighter so light ink stays readable on it.
 
 ### Type
 
@@ -97,7 +97,8 @@ What premium products do instead (Linear, Readwise Reader, Stripe Press):
 - Focus mode narrows the light: navigation disappears, the page edges fall into soft shade, and every section except the playing one fades, so only the video and the playing section stay lit.
 - Flashcards are a real-looking index card that flips.
 - The quiz is an OMR sheet, and this is where the boldness goes: answers fill in as bubbles, marked +4 and −1 like the real paper.
-- Revise is a pile of cards waiting from older lectures, not a list.
+- Revise is a pile of cards waiting from older lectures, not a list. It drops onto the desk when opened, and Next puts a card aside.
+- Moving between pages, the old page steps back and the new one rises into place; a lecture's still grows into its player. This and the quiz marking are the motion budget: no more effects without a reason.
 
 ### Copy
 

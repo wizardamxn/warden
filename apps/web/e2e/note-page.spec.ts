@@ -1,44 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import fixture from "../fixtures/k7Zb1iOV-ys.json";
-
-const VIDEO_ID = "k7Zb1iOV-ys";
-
-// A stand-in for YouTube's script, so these tests don't depend on YouTube. The tests drive it through window.fakePlayer.
-const FAKE_API = `
-  window.YT = {
-    Player: class {
-      constructor(element, options) {
-        element.replaceWith(Object.assign(document.createElement("iframe"), { title: "fake player" }));
-        this.time = 0;
-        this.seeks = [];
-        this.options = options;
-        window.fakePlayer = this;
-        window.playersMade = (window.playersMade ?? 0) + 1;
-        setTimeout(() => options.events.onReady());
-      }
-      getCurrentTime() { return this.time; }
-      seekTo(seconds) { this.seeks.push(seconds); this.time = seconds; }
-      playVideo() {}
-      destroy() {}
-    },
-  };
-  window.onYouTubeIframeAPIReady();
-`;
-
-type FakePlayer = {
-  time: number;
-  seeks: number[];
-  options: { host: string; events: { onError(event: { data: number }): void } };
-};
-const fakePlayer = (page: Page) => page.evaluateHandle(() => (window as never as { fakePlayer: FakePlayer }).fakePlayer);
-
-type Status = "pending" | "running" | "done" | "failed";
-
-// What the API answers, built from the job status and the four step statuses in order.
-function job(status: string, steps: Status[], note: object | null = null, error = "") {
-  const names = ["captions", "notes", "flashcards", "quiz"];
-  return { video_id: VIDEO_ID, status, steps: steps.map((step, index) => ({ name: names[index], status: step, error: "" })), note, error };
-}
+import { FAKE_API, fakePlayer, fixture, job, mockMe, VIDEO_ID } from "./mock";
 
 const FINISHED = job("done", ["done", "done", "done", "done"], fixture);
 const NOTE_PATH = `**/v1/notes/${VIDEO_ID}`;
@@ -47,6 +8,7 @@ const DOWN = "Warden's server isn't answering. Give it a minute.";
 // A stand-in for the Go API. Set `api.answer` to change what the next poll sees, whichever poll that is.
 async function mockApi(page: Page, answer: object) {
   const api = { answer, gets: 0, retries: 0 };
+  await mockMe(page);
   await page.route("https://www.youtube.com/iframe_api", (route) => route.fulfill({ contentType: "text/javascript", body: FAKE_API }));
   await page.route(NOTE_PATH, (route) => {
     api.gets++;
@@ -199,6 +161,7 @@ test("a link that's already finished opens its note", async ({ page }) => {
 });
 
 test("a bad link shows the API's message and stays on the form", async ({ page }) => {
+  await mockMe(page);
   await page.route("**/v1/notes", (route) => route.fulfill({ status: 400, json: { error: "That video is private." } }));
   await page.goto("/");
   await page.getByLabel("YouTube link").fill(`https://youtu.be/${VIDEO_ID}`);
@@ -209,6 +172,7 @@ test("a bad link shows the API's message and stays on the form", async ({ page }
 });
 
 test("a link that isn't YouTube is refused without calling the API", async ({ page }) => {
+  await mockMe(page);
   let calls = 0;
   await page.route("**/v1/notes", (route) => {
     calls++;

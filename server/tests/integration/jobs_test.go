@@ -19,7 +19,7 @@ import (
 // step finds one step of the pipeline by name.
 func step(t *testing.T, name string) pipeline.Step {
 	t.Helper()
-	for _, s := range pipeline.Steps {
+	for _, s := range pipeline.Steps(llm.NEET) {
 		if s.Name == name {
 			return s
 		}
@@ -220,7 +220,7 @@ func TestSlowJobKeepsItsHold(t *testing.T) {
 	// Well past the timeout, the job is still held by the worker running it.
 	time.Sleep(600 * time.Millisecond)
 	wantNothingToClaim(t, q)
-	view, err := q.Get(context.Background(), testID)
+	view, err := q.Get(context.Background(), testID, "neet")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,7 +264,7 @@ func TestJobWithNoWorkerLeftAlwaysEnds(t *testing.T) {
 
 			// Only the API is left. Polling alone has to end the job.
 			time.Sleep(stuck * 4)
-			view, err := q.Get(ctx, testID)
+			view, err := q.Get(ctx, testID, "neet")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -278,7 +278,7 @@ func TestJobWithNoWorkerLeftAlwaysEnds(t *testing.T) {
 			}
 
 			// Try again starts it afresh, and the clock with it.
-			view, err = q.Retry(ctx, testID)
+			view, err = q.Retry(ctx, testID, "neet")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -299,7 +299,7 @@ func TestStuckStepGoesBackToFreeWhileOnlyTheAPIIsWatching(t *testing.T) {
 	}
 
 	time.Sleep(250 * time.Millisecond)
-	view, err := q.Get(ctx, testID)
+	view, err := q.Get(ctx, testID, "neet")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -321,7 +321,7 @@ func TestStepPastItsAttemptsFailsWithoutAWorker(t *testing.T) {
 	}
 
 	time.Sleep(250 * time.Millisecond)
-	view, err := q.Get(ctx, testID)
+	view, err := q.Get(ctx, testID, "neet")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -350,7 +350,7 @@ func TestRetryOnlyRunsFailedSteps(t *testing.T) {
 			fake.fail(500, "failed", tt.failing)
 
 			runNext(t, q, client)
-			view, err := q.Get(ctx, testID)
+			view, err := q.Get(ctx, testID, "neet")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -367,7 +367,7 @@ func TestRetryOnlyRunsFailedSteps(t *testing.T) {
 			}
 
 			fake.fail(0, "")
-			view, err = q.Retry(ctx, testID)
+			view, err = q.Retry(ctx, testID, "neet")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -375,7 +375,7 @@ func TestRetryOnlyRunsFailedSteps(t *testing.T) {
 				t.Errorf("status after retry = %q", view.Status)
 			}
 			runNext(t, q, client)
-			view, err = q.Get(ctx, testID)
+			view, err = q.Get(ctx, testID, "neet")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -394,7 +394,7 @@ func TestReusedVideoMakesNoAICalls(t *testing.T) {
 	client, fake := fakeGemini(t)
 
 	runNext(t, q, client)
-	view, err := q.Enqueue(ctx, testID)
+	view, err := q.Enqueue(ctx, testID, "neet")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -415,7 +415,7 @@ func TestNewPromptVersionRunsOnlyThatStep(t *testing.T) {
 	if _, err := q.DB.Exec(ctx, `UPDATE job_steps SET prompt_version = 'older' WHERE name = 'quiz'`); err != nil {
 		t.Fatal(err)
 	}
-	view, err := q.Enqueue(ctx, testID)
+	view, err := q.Enqueue(ctx, testID, "neet")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -446,7 +446,7 @@ func TestNoteShowsBeforeTheOtherStepsFinish(t *testing.T) {
 	if err := job.Done(ctx, step(t, "notes"), map[string]string{"title": "Immunity"}, llm.Usage{}); err != nil {
 		t.Fatal(err)
 	}
-	view, err := q.Get(ctx, testID)
+	view, err := q.Get(ctx, testID, "neet")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -466,7 +466,7 @@ func TestDailyQuotaFailsTheStepPlainlyWithOneCall(t *testing.T) {
 	fake.fail(429, `{"error":{"code":429,"details":[{"violations":[{"quotaId":"GenerateRequestsPerDayPerProjectPerModel-FreeTier"}]}]}}`, "notes")
 
 	runNext(t, q, client)
-	view, err := q.Get(ctx, testID)
+	view, err := q.Get(ctx, testID, "neet")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -517,7 +517,7 @@ func TestShutdownFreesTheStepAndANewWorkerCarriesOn(t *testing.T) {
 	fake.mu.Unlock()
 	runNext(t, q, client)
 	fake.wantCalls(t, map[string]int{"notes": 1, "flashcards": 2, "quiz": 1})
-	view, err := q.Get(context.Background(), testID)
+	view, err := q.Get(context.Background(), testID, "neet")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -547,14 +547,14 @@ func TestSaveFinishesEvenDuringShutdown(t *testing.T) {
 func TestCaptionsFailureFailsEveryStepAndRetriesThemAll(t *testing.T) {
 	q := testQueue(t)
 	ctx := context.Background()
-	if _, err := q.Enqueue(ctx, testID); err != nil {
+	if _, err := q.Enqueue(ctx, testID, "neet"); err != nil {
 		t.Fatal(err)
 	}
 	client, fake := fakeGemini(t)
 	t.Setenv("PATH", "") // yt-dlp can't start, so nothing reaches YouTube
 
 	runNext(t, q, client)
-	view, err := q.Get(ctx, testID)
+	view, err := q.Get(ctx, testID, "neet")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -568,7 +568,7 @@ func TestCaptionsFailureFailsEveryStepAndRetriesThemAll(t *testing.T) {
 	}
 	fake.wantCalls(t, map[string]int{})
 
-	view, err = q.Retry(ctx, testID)
+	view, err = q.Retry(ctx, testID, "neet")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -580,10 +580,10 @@ func TestCaptionsFailureFailsEveryStepAndRetriesThemAll(t *testing.T) {
 func TestUnknownVideo(t *testing.T) {
 	q := testQueue(t)
 	ctx := context.Background()
-	if _, err := q.Get(ctx, testID); !errors.Is(err, jobs.ErrNotFound) {
+	if _, err := q.Get(ctx, testID, "neet"); !errors.Is(err, jobs.ErrNotFound) {
 		t.Errorf("get: %v", err)
 	}
-	if _, err := q.Retry(ctx, testID); !errors.Is(err, jobs.ErrNotFound) {
+	if _, err := q.Retry(ctx, testID, "neet"); !errors.Is(err, jobs.ErrNotFound) {
 		t.Errorf("retry: %v", err)
 	}
 }

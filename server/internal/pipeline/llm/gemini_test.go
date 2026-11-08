@@ -279,7 +279,7 @@ const goodAnswer = `{
 
 func TestMakeNote(t *testing.T) {
 	client, requests := fakeGemini(t, reply(goodAnswer))
-	note, usage, err := MakeNote(context.Background(), client, testVideo, testLines)
+	note, usage, err := MakeNote(context.Background(), client, NEET, testVideo, testLines)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,7 +304,7 @@ func TestMakeNote(t *testing.T) {
 func TestMakeNoteSendsProblemsBackOnce(t *testing.T) {
 	bad := `{"tldr": "", "key_points": ["x"], "sections": [{"start_seconds": 0, "title": "t", "bullets": ["b"]}], "glossary": []}`
 	client, requests := fakeGemini(t, reply(bad), reply(goodAnswer))
-	note, usage, err := MakeNote(context.Background(), client, testVideo, testLines)
+	note, usage, err := MakeNote(context.Background(), client, NEET, testVideo, testLines)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -329,7 +329,7 @@ func TestMakeNoteDropsAnExamMarkItCannotVerify(t *testing.T) {
 		"glossary": []
 	}`
 	client, _ := fakeGemini(t, reply(invented), reply(invented))
-	note, _, err := MakeNote(context.Background(), client, testVideo, testLines)
+	note, _, err := MakeNote(context.Background(), client, NEET, testVideo, testLines)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -347,7 +347,7 @@ func TestMakeNoteKeepsAProvenExamMark(t *testing.T) {
 		"glossary": []
 	}`
 	client, _ := fakeGemini(t, reply(proven))
-	note, _, err := MakeNote(context.Background(), client, testVideo, testLines)
+	note, _, err := MakeNote(context.Background(), client, NEET, testVideo, testLines)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -361,14 +361,14 @@ func TestMakeNoteOnlyRescuesAWholeAnswer(t *testing.T) {
 	cutShort := `{"tldr": "What immunity is.", "key_points": ["Two types."],
 		"sections": [{"start_seconds": 0, "title": "Immunity", "bullets": ["Two types."]}], "glossary": "oops"}`
 	client, _ := fakeGemini(t, reply(cutShort), reply(cutShort))
-	if _, _, err := MakeNote(context.Background(), client, testVideo, testLines); err == nil {
+	if _, _, err := MakeNote(context.Background(), client, NEET, testVideo, testLines); err == nil {
 		t.Error("expected an error")
 	}
 }
 
 func TestMakeNoteGivesUpAfterTwoBadAnswers(t *testing.T) {
 	client, requests := fakeGemini(t, reply(`not json`), reply(`{"tldr": ""}`))
-	_, usage, err := MakeNote(context.Background(), client, testVideo, testLines)
+	_, usage, err := MakeNote(context.Background(), client, NEET, testVideo, testLines)
 	if err == nil || !strings.Contains(err.Error(), "tldr is empty") {
 		t.Errorf("err = %v", err)
 	}
@@ -392,7 +392,7 @@ func answerText(t *testing.T, list any) string {
 
 func TestMakeFlashcards(t *testing.T) {
 	client, requests := fakeGemini(t, reply(answerText(t, goodCards())))
-	cards, usage, err := MakeFlashcards(context.Background(), client, testVideo, testLines)
+	cards, usage, err := MakeFlashcards(context.Background(), client, NEET, testVideo, testLines)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -430,7 +430,7 @@ func TestShuffleOptions(t *testing.T) {
 
 func TestMakeQuiz(t *testing.T) {
 	client, requests := fakeGemini(t, reply(answerText(t, goodQuiz())))
-	quiz, usage, err := MakeQuiz(context.Background(), client, testVideo, testLines)
+	quiz, usage, err := MakeQuiz(context.Background(), client, NEET, testVideo, testLines)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -457,7 +457,7 @@ func TestStudyStepsSendProblemsBackOnce(t *testing.T) {
 		{
 			name: "flashcards",
 			run: func(client *Client) error {
-				_, _, err := MakeFlashcards(context.Background(), client, testVideo, testLines)
+				_, _, err := MakeFlashcards(context.Background(), client, NEET, testVideo, testLines)
 				return err
 			},
 			bad:     answerText(t, badCards),
@@ -467,7 +467,7 @@ func TestStudyStepsSendProblemsBackOnce(t *testing.T) {
 		{
 			name: "quiz",
 			run: func(client *Client) error {
-				_, _, err := MakeQuiz(context.Background(), client, testVideo, testLines)
+				_, _, err := MakeQuiz(context.Background(), client, NEET, testVideo, testLines)
 				return err
 			},
 			bad:     answerText(t, badQuiz),

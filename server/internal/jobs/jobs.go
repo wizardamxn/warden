@@ -66,58 +66,68 @@ func (v View) Finished() bool {
 	return v.Status == "done" || v.Status == "partial" || v.Status == "failed"
 }
 
-// Enqueue makes sure a video has a job and returns it. A step already saved with
-// today's prompt is left alone, so a repeat request adds no work and no AI calls.
-// shortcut: a new prompt version overwrites the old result, keep old rows if we ever want to compare versions.
-func (q *Queue) Enqueue(ctx context.Context, videoID string) (View, error) {
-	var names, versions []string
-	for _, step := range pipeline.Steps {
-		names = append(names, step.Name)
-		versions = append(versions, step.Version)
-	}
+// Enqueue makes sure a video has a job under a template and returns it. A step
+// already saved with today's prompt is left alone, so a repeat request adds no
+// work and no AI calls.
+func (q *Queue) Enqueue(ctx context.Context, videoID, template string) (View, error) {
 	err := pgx.BeginFunc(ctx, q.DB, func(tx pgx.Tx) error {
-		_, err := tx.Exec(ctx, `INSERT INTO jobs (video_id) VALUES ($1) ON CONFLICT (video_id) DO NOTHING`, videoID)
-		if err != nil {
-			return err
-		}
-		tag, err := tx.Exec(ctx, `
-			INSERT INTO job_steps (job_id, name, prompt_version)
-			SELECT j.id, s.name, s.version
-			FROM jobs j, unnest($2::text[], $3::text[]) AS s (name, version)
-			WHERE j.video_id = $1
-			ON CONFLICT (job_id, name) DO UPDATE SET
-				prompt_version = EXCLUDED.prompt_version,
-				status = 'pending', result = NULL, error = '', started_at = NULL, finished_at = NULL
-			WHERE job_steps.prompt_version <> EXCLUDED.prompt_version`, videoID, names, versions)
-		if err != nil || tag.RowsAffected() == 0 {
-			return err
-		}
-		_, err = tx.Exec(ctx, `UPDATE jobs SET active_at = now() WHERE video_id = $1`, videoID)
-		return err
+		return enqueue(ctx, tx, videoID, template)
 	})
 	if err != nil {
 		return View{}, err
 	}
-	return q.Get(ctx, videoID)
+	return q.Get(ctx, videoID, template)
+}
+
+// enqueue is Enqueue inside the caller's transaction.
+// shortcut: a new prompt version overwrites the old result, keep old rows if we ever want to compare versions.
+func enqueue(ctx context.Context, tx pgx.Tx, videoID, template string) error {
+	t, err := llm.TemplateFor(template)
+	if err != nil {
+		return err
+	}
+	var names, versions []string
+	for _, step := range pipeline.Steps(t) {
+		names = append(names, step.Name)
+		versions = append(versions, step.Version)
+	}
+	_, err = tx.Exec(ctx, `INSERT INTO jobs (video_id, template) VALUES ($1, $2) ON CONFLICT (video_id, template) DO NOTHING`, videoID, template)
+	if err != nil {
+		return err
+	}
+	tag, err := tx.Exec(ctx, `
+		INSERT INTO job_steps (job_id, name, prompt_version)
+		SELECT j.id, s.name, s.version
+		FROM jobs j, unnest($3::text[], $4::text[]) AS s (name, version)
+		WHERE j.video_id = $1 AND j.template = $2
+		ON CONFLICT (job_id, name) DO UPDATE SET
+			prompt_version = EXCLUDED.prompt_version,
+			status = 'pending', result = NULL, error = '', started_at = NULL, finished_at = NULL
+		WHERE job_steps.prompt_version <> EXCLUDED.prompt_version`, videoID, template, names, versions)
+	if err != nil || tag.RowsAffected() == 0 {
+		return err
+	}
+	_, err = tx.Exec(ctx, `UPDATE jobs SET active_at = now() WHERE video_id = $1 AND template = $2`, videoID, template)
+	return err
 }
 
 // Retry frees a job's failed steps and nothing else.
-func (q *Queue) Retry(ctx context.Context, videoID string) (View, error) {
+func (q *Queue) Retry(ctx context.Context, videoID, template string) (View, error) {
 	err := pgx.BeginFunc(ctx, q.DB, func(tx pgx.Tx) error {
 		tag, err := tx.Exec(ctx, `
 			UPDATE job_steps s SET status = 'pending', error = '', finished_at = NULL
 			FROM jobs j
-			WHERE s.job_id = j.id AND j.video_id = $1 AND s.status = 'failed'`, videoID)
+			WHERE s.job_id = j.id AND j.video_id = $1 AND j.template = $2 AND s.status = 'failed'`, videoID, template)
 		if err != nil || tag.RowsAffected() == 0 {
 			return err
 		}
-		_, err = tx.Exec(ctx, `UPDATE jobs SET active_at = now() WHERE video_id = $1`, videoID)
+		_, err = tx.Exec(ctx, `UPDATE jobs SET active_at = now() WHERE video_id = $1 AND template = $2`, videoID, template)
 		return err
 	})
 	if err != nil {
 		return View{}, err
 	}
-	return q.Get(ctx, videoID)
+	return q.Get(ctx, videoID, template)
 }
 
 // stepRow is one step as stored. Result is nil for captions: the transcript is
@@ -132,24 +142,24 @@ type stepRow struct {
 // Get reads a job, with as much of the note as is ready. The website keeps
 // asking until a job ends, so this is also what ends a job with no worker left:
 // the rule can't depend on a worker that may never come.
-func (q *Queue) Get(ctx context.Context, videoID string) (View, error) {
-	view, jobID, stalled, err := q.read(ctx, videoID)
+func (q *Queue) Get(ctx context.Context, videoID, template string) (View, error) {
+	view, jobID, stalled, err := q.read(ctx, videoID, template)
 	if err != nil || !stalled {
 		return view, err
 	}
 	if err := q.settle(ctx, jobID); err != nil {
 		return View{}, err
 	}
-	view, _, _, err = q.read(ctx, videoID)
+	view, _, _, err = q.read(ctx, videoID, template)
 	return view, err
 }
 
 // read loads a job. stalled says nobody holds it and it needs settling.
-func (q *Queue) read(ctx context.Context, videoID string) (view View, jobID int64, stalled bool, err error) {
+func (q *Queue) read(ctx context.Context, videoID, template string) (view View, jobID int64, stalled bool, err error) {
 	var held, idle bool
 	err = q.DB.QueryRow(ctx, `
-		SELECT id, COALESCE(locked_until > now(), false), active_at < now() - make_interval(secs => $2)
-		FROM jobs WHERE video_id = $1`, videoID, q.giveUpSeconds()).Scan(&jobID, &held, &idle)
+		SELECT id, COALESCE(locked_until > now(), false), active_at < now() - make_interval(secs => $3)
+		FROM jobs WHERE video_id = $1 AND template = $2`, videoID, template, q.giveUpSeconds()).Scan(&jobID, &held, &idle)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return View{}, 0, false, ErrNotFound
 	}
@@ -167,7 +177,7 @@ func (q *Queue) read(ctx context.Context, videoID string) (view View, jobID int6
 	if err != nil {
 		return View{}, 0, false, err
 	}
-	view, err = buildView(videoID, held, stored)
+	view, err = buildView(videoID, template, held, stored)
 	if err != nil {
 		return View{}, 0, false, err
 	}
@@ -230,16 +240,16 @@ func takeBack(ctx context.Context, tx pgx.Tx, jobID int64) ([]string, error) {
 
 // buildView works out the status from the steps, so there's only one place
 // that says how a job is doing.
-func buildView(videoID string, held bool, stored []stepRow) (View, error) {
+func buildView(videoID, template string, held bool, stored []stepRow) (View, error) {
 	byName := map[string]stepRow{}
 	for _, row := range stored {
 		byName[row.Name] = row
 	}
 
 	view := View{VideoID: videoID}
-	for _, step := range pipeline.Steps {
-		row := byName[step.Name]
-		view.Steps = append(view.Steps, StepView{Name: step.Name, Status: row.Status, Error: row.Error})
+	for _, name := range pipeline.StepNames {
+		row := byName[name]
+		view.Steps = append(view.Steps, StepView{Name: name, Status: row.Status, Error: row.Error})
 	}
 	view.Status = overallStatus(view.Steps, held)
 	if view.Status == "failed" {
@@ -271,7 +281,7 @@ func buildView(videoID string, held bool, stored []stepRow) (View, error) {
 			failed = append(failed, name)
 		}
 	}
-	assembled := pipeline.Assemble(note, cards, quiz, failed)
+	assembled := pipeline.Assemble(note, template, cards, quiz, failed)
 	view.Note = &assembled
 	return view, nil
 }
@@ -312,6 +322,7 @@ func firstError(steps []StepView) string {
 type Job struct {
 	ID       int64
 	VideoID  string
+	Template string
 	queue    *Queue
 	owner    string         // proves the hold on the job is still ours
 	attempts map[string]int // proves each running step is still ours
@@ -324,12 +335,12 @@ func (q *Queue) Claim(ctx context.Context) (*Job, []string, error) {
 	var takenBack []string
 	err := pgx.BeginFunc(ctx, q.DB, func(tx pgx.Tx) error {
 		err := tx.QueryRow(ctx, `
-			SELECT j.id, j.video_id FROM jobs j
+			SELECT j.id, j.video_id, j.template FROM jobs j
 			WHERE (j.locked_until IS NULL OR j.locked_until < now())
 				AND EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = j.id AND s.status IN ('pending', 'running'))
 			ORDER BY j.id
 			LIMIT 1
-			FOR UPDATE OF j SKIP LOCKED`).Scan(&job.ID, &job.VideoID)
+			FOR UPDATE OF j SKIP LOCKED`).Scan(&job.ID, &job.VideoID, &job.Template)
 		if err != nil {
 			return err
 		}

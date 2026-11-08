@@ -1,18 +1,25 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import type { Template } from "@/lib/api/account";
 import type { Question } from "@/lib/api/notes";
 import { Watch } from "./Watch";
 import "./study.css";
 
 type Props = {
   quiz: Question[];
+  template: Template;
   videoId: string;
   onWatch: ((seconds: number) => void) | null;
 };
 
-// Marked like the real NEET paper.
-const MARK = { right: "+4", wrong: "−1", blank: "0" };
+type Result = "right" | "wrong" | "blank";
+
+// NEET: marked like the real paper, +4, −1 and 0. General: a teacher's tick or cross, and the score is how many are right.
+const MARKS: Record<Template, Record<Result, string>> = {
+  neet: { right: "+4", wrong: "−1", blank: "0" },
+  general: { right: "✓", wrong: "✗", blank: "–" },
+};
 
 // NEET prints a match question's two lists side by side. Anything else, or lists that don't pair up, stays as its own lines.
 function matchLists(text: string) {
@@ -52,22 +59,29 @@ function QuestionText({ question }: { question: Question }) {
   );
 }
 
+// A negative NEET score is written with a real minus sign.
+function signed(score: number): string {
+  return String(score).replace("-", "−");
+}
+
 // The whole quiz on one OMR sheet: fill bubbles, submit once, then see every mark and why.
-export function AnswerSheet({ quiz, videoId, onWatch }: Props) {
+export function AnswerSheet({ quiz, template, videoId, onWatch }: Props) {
+  const neet = template === "neet";
   const [answers, setAnswers] = useState<(number | undefined)[]>([]);
   const [marked, setMarked] = useState(false);
   const id = useId();
   const head = useRef<HTMLHeadingElement>(null);
   const stroke = useRef<HTMLSpanElement>(null);
   const glow = useRef<HTMLSpanElement>(null);
+  const shownScore = useRef<HTMLSpanElement>(null);
   // Set by Submit and Try again, so opening the page doesn't move it.
   const moved = useRef(false);
 
-  const results = quiz.map((question, index): keyof typeof MARK =>
+  const results = quiz.map((question, index): Result =>
     answers[index] === undefined ? "blank" : answers[index] === question.answer_index ? "right" : "wrong",
   );
   const count = (result: string) => results.filter((each) => each === result).length;
-  const score = count("right") * 4 - count("wrong");
+  const score = neet ? count("right") * 4 - count("wrong") : count("right");
   const filled = answers.filter((answer) => answer !== undefined).length;
 
   function fill(index: number, option: number | undefined) {
@@ -92,10 +106,22 @@ export function AnswerSheet({ quiz, videoId, onWatch }: Props) {
     const ease = { duration: 400, easing: "ease-out" };
     stroke.current?.animate([{ transform: "scaleX(0) rotate(-0.4deg)" }, { transform: "scaleX(1) rotate(-0.4deg)" }], { ...ease, delay: 150, fill: "backwards" });
     glow.current?.animate([{ opacity: 0 }, { opacity: 1 }], ease);
+    // The score counts up to itself as the light arrives. Only the shown number moves; screen readers get the final one.
+    const shown = shownScore.current;
+    if (!shown) return;
+    const began = performance.now();
+    let frame = requestAnimationFrame(function tick(now) {
+      const done = Math.min((now - began) / 500, 1);
+      shown.textContent = signed(Math.round(score * (1 - (1 - done) ** 3)));
+      if (done < 1) frame = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(frame);
+    // Once per submit: the score can't change while the sheet is marked.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [marked]);
 
   return (
-    <div className="sheet">
+    <div className={marked ? "sheet marked" : "sheet"}>
       <div className="sheet-head">
         {marked ? (
           <>
@@ -103,7 +129,10 @@ export function AnswerSheet({ quiz, videoId, onWatch }: Props) {
             <h2 className="score" ref={head} tabIndex={-1}>
               <span className="stroke" ref={stroke} />
               <span className="tx">
-                {String(score).replace("-", "−")} out of {quiz.length * 4}
+                <span ref={shownScore} aria-hidden="true">
+                  {signed(score)}
+                </span>
+                <span className="sr">{signed(score)}</span> out of {neet ? quiz.length * 4 : quiz.length}
               </span>
             </h2>
             <p className="sub">
@@ -115,7 +144,11 @@ export function AnswerSheet({ quiz, videoId, onWatch }: Props) {
             <h2 ref={head} tabIndex={-1}>
               Answer sheet
             </h2>
-            <p className="sub">Fill one bubble for each question. +4 for right, &minus;1 for wrong, 0 if you leave it blank.</p>
+            <p className="sub">
+              {neet
+                ? "Fill one bubble for each question. +4 for right, −1 for wrong, 0 if you leave it blank."
+                : "Fill one bubble for each question. Your score is how many you get right."}
+            </p>
           </>
         )}
       </div>
@@ -126,7 +159,7 @@ export function AnswerSheet({ quiz, videoId, onWatch }: Props) {
           const picked = answers[index];
           const result = results[index];
           return (
-            <div className="q" key={index}>
+            <div className="q" key={index} style={{ "--i": index } as CSSProperties}>
               <div className="qtext" id={`${id}-${index}`}>
                 <span className="qnum">{index + 1}</span>
                 <div className="qbody">
@@ -136,7 +169,7 @@ export function AnswerSheet({ quiz, videoId, onWatch }: Props) {
 
               {marked ? (
                 <p className="mark">
-                  {MARK[result]} <span>{result}</span>
+                  {MARKS[template][result]} <span>{result}</span>
                 </p>
               ) : (
                 picked !== undefined && (

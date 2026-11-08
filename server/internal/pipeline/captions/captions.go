@@ -190,9 +190,17 @@ func parseJSON3(data []byte) ([]Line, error) {
 	return lines, nil
 }
 
+// CookiesFile is a Netscape-format cookies.txt from a logged-in browser. YouTube
+// asks servers to "sign in to confirm you're not a bot" without one. Empty means none.
+var CookiesFile string
+
 // ytDlp runs yt-dlp and returns what it printed.
 func ytDlp(ctx context.Context, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "yt-dlp", append([]string{"--no-warnings", "--no-playlist"}, args...)...)
+	base := []string{"--no-warnings", "--no-playlist"}
+	if CookiesFile != "" {
+		base = append(base, "--cookies", CookiesFile)
+	}
+	cmd := exec.CommandContext(ctx, "yt-dlp", append(base, args...)...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()

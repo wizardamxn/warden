@@ -1,5 +1,6 @@
-/* Every colour in the website. Screens use these names only. Dark mode later is a second set of values. */
+/* Every colour in the website. Screens use these names only. Dark mode is a second set of values for the same names, below. */
 :root {
+  color-scheme: light;
   --paper: #fbf7ee;
   --glow: #fff1bf;
   --shade: #f0e8d8;
@@ -9,6 +10,7 @@
   --input-line: #b8ad99;
   --highlighter: #f6d364;
   --gold: #edbe45;
+  --on-gold: #2b2620;
   --blue-pen: #1f4fa3;
   --red-pen: #c7261f;
   --frame: #1f1c18;
@@ -20,6 +22,54 @@
 
   --serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
   --sans: var(--font-instrument-sans), "Segoe UI", Arial, sans-serif;
+}
+
+/* The same desk at night, under a lamp. Paper you hold is a little lighter than the desk, not shadowed;
+   pens and the highlighter are lighter and less saturated, and the highlighter is dark enough for light ink on it.
+   Device setting unless Settings picked one (data-theme on <html>, set before paint in layout.tsx).
+   The two blocks are the same values: CSS can't share one block between a media query and a selector. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #1b1813;
+    --glow: #33291a;
+    --shade: #110f0c;
+    --ink: #ebe3d4;
+    --ink-soft: #a69c8b;
+    --hairline: #37312a;
+    --input-line: #6e6556;
+    --highlighter: #8f7124;
+    --gold: #d4a63e;
+    --on-gold: #231f1a;
+    --blue-pen: #86a6e0;
+    --red-pen: #e57a70;
+    --frame: #0e0c0a;
+    --card: #25211b;
+    --card-rule: #2c3442;
+    --card-red: #5e3531;
+    --lift: 0 0 0 1px #302a22;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #1b1813;
+  --glow: #33291a;
+  --shade: #110f0c;
+  --ink: #ebe3d4;
+  --ink-soft: #a69c8b;
+  --hairline: #37312a;
+  --input-line: #6e6556;
+  --highlighter: #8f7124;
+  --gold: #d4a63e;
+  --on-gold: #231f1a;
+  --blue-pen: #86a6e0;
+  --red-pen: #e57a70;
+  --frame: #0e0c0a;
+  --card: #25211b;
+  --card-rule: #2c3442;
+  --card-red: #5e3531;
+  --lift: 0 0 0 1px #302a22;
 }
 
 *,
@@ -117,6 +167,28 @@ body {
   color: var(--ink);
 }
 
+a.quiet,
+a.primary {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+/* The student's pages, at the end of the top line. The page you're on is ink and underlined, so it's not told by colour alone. */
+.site {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 24px;
+  margin-left: auto;
+}
+
+.site [aria-current="page"] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 8px;
+}
+
 .link {
   font-family: var(--sans);
   font-size: 16px;
@@ -130,7 +202,7 @@ body {
   border: 0;
   border-radius: 4px;
   background: var(--gold);
-  color: var(--ink);
+  color: var(--on-gold);
   font-family: var(--sans);
   font-size: 16px;
   font-weight: 600;
@@ -171,9 +243,169 @@ h1 {
   overflow-wrap: anywhere;
 }
 
+/* A page with one column of words: home, log in, the library and the rest. Left-aligned, under the glow. */
+.home {
+  max-width: 880px;
+  padding: 120px 0 0 96px;
+}
+
+.home h1 {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.home .lead {
+  margin: 0 0 40px;
+  font-size: 24px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+/* A quieter second way forward, under the main one. */
+.home .try {
+  margin-top: 32px;
+}
+
+/* The one primary button with a quiet way out beside it. */
+.join {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 32px;
+}
+
+/* An underlined line to write on, like a form on paper. */
+.line {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-bottom: 1.5px solid var(--input-line);
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 19px;
+}
+
+.line[aria-invalid="true"] {
+  border-bottom-color: var(--red-pen);
+}
+
+/* An OMR bubble. Filling it is the blue pen: the answer sheet and the template choice. */
+.bubble {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 24px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.bubble::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: 48% 52% 50% 46% / 54% 46% 52% 48%;
+  background: var(--blue-pen);
+  opacity: 0;
+  transform: scale(0.3) rotate(-6deg);
+  transition:
+    transform 0.18s ease-out,
+    opacity 0.18s ease-out;
+}
+
+input:checked + .bubble::after {
+  opacity: 1;
+  transform: scale(1) rotate(-6deg);
+}
+
+label:hover > input:enabled + .bubble {
+  border-color: var(--blue-pen);
+  color: var(--blue-pen);
+}
+
+input:focus-visible + .bubble {
+  outline: 2px solid var(--blue-pen);
+  outline-offset: 3px;
+}
+
 @media (max-width: 700px) {
   .wrap {
     padding: 16px 16px 64px;
+  }
+
+  .home {
+    padding: 48px 0 0;
+  }
+
+  .home h1 {
+    font-size: 38px;
+  }
+}
+
+/* Moving between pages (components/ui/Arrive.tsx). The old page leaves quickly so it doesn't compete;
+   the new one rises a little into place. The top line doesn't move, so it's clear only the page changed. */
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-old(.leave) {
+  animation: 150ms ease-out both fade-out;
+}
+
+::view-transition-new(.arrive) {
+  animation:
+    250ms ease-out 100ms both fade-in,
+    350ms ease-out both rise;
+}
+
+::view-transition-group(site-nav) {
+  animation: none;
+  z-index: 10;
+}
+
+::view-transition-old(site-nav) {
+  display: none;
+}
+
+::view-transition-new(site-nav) {
+  animation: none;
+}
+
+/* A lecture's still in the library grows into its player on the note page. */
+::view-transition-group(.morph) {
+  animation-duration: 400ms;
+  animation-timing-function: ease-out;
+  z-index: 5;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(12px);
   }
 }
 
@@ -184,5 +416,12 @@ h1 {
     transition: none !important;
     animation: none !important;
     scroll-behavior: auto !important;
+  }
+
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }

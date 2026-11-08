@@ -35,6 +35,17 @@ const (
 // real Postgres, and drops it afterwards.
 func testQueue(t *testing.T) *jobs.Queue {
 	t.Helper()
+	db := testDB(t)
+	if _, err := migrations.Apply(context.Background(), db); err != nil {
+		t.Fatal(err)
+	}
+	return jobs.New(db)
+}
+
+// testDB gives a test its own new, empty schema on a real Postgres, and drops
+// it afterwards.
+func testDB(t *testing.T) *pgxpool.Pool {
+	t.Helper()
 	url := os.Getenv("TEST_DATABASE_URL")
 	if url == "" {
 		url = localURL
@@ -69,24 +80,25 @@ func testQueue(t *testing.T) *jobs.Queue {
 		t.Fatal(err)
 	}
 	t.Cleanup(db.Close)
-
-	if _, err := migrations.Apply(ctx, db); err != nil {
-		t.Fatal(err)
-	}
-	return jobs.New(db)
+	return db
 }
 
-// seedVideo adds a job with its captions already saved, so tests never run yt-dlp.
+// seedVideo adds a NEET job with its captions already saved, so tests never run yt-dlp.
 func seedVideo(t *testing.T, q *jobs.Queue, videoID string) {
 	t.Helper()
-	ctx := context.Background()
-	if _, err := q.Enqueue(ctx, videoID); err != nil {
+	if _, err := q.Enqueue(context.Background(), videoID, "neet"); err != nil {
 		t.Fatal(err)
 	}
-	_, err := q.DB.Exec(ctx, `
+	seedCaptions(t, q, videoID)
+}
+
+// seedCaptions saves the captions of every job a video has, as if downloaded.
+func seedCaptions(t *testing.T, q *jobs.Queue, videoID string) {
+	t.Helper()
+	_, err := q.DB.Exec(context.Background(), `
 		UPDATE job_steps SET status = 'done', result = $2
 		FROM jobs j WHERE job_steps.job_id = j.id AND j.video_id = $1 AND name = 'captions'`, videoID,
-		`{"Video":{"ID":"`+videoID+`","Title":"Immunity","DurationSeconds":100,"Source":"auto-captions"},"Lines":[{"StartSeconds":0,"Text":"immunity"}]}`)
+		`{"Video":{"ID":"`+videoID+`","Title":"Immunity","Channel":"Test","DurationSeconds":100,"Source":"auto-captions"},"Lines":[{"StartSeconds":0,"Text":"immunity"}]}`)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,13 +128,15 @@ func stepOf(t *testing.T, q *jobs.Queue, videoID, name string) storedStep {
 }
 
 // fakeAPI stands in for Gemini. It counts calls by step. Steps in failing get
-// an error, and hold, if set, keeps every call waiting until it's closed.
+// an error, and hold, if set, keeps every call waiting until it's closed. Each
+// template gets a quiz with its own question types, unless neetQuizOnly is set.
 type fakeAPI struct {
-	mu      sync.Mutex
-	failing map[string]int // step to the HTTP status it gets
-	body    string
-	calls   map[string]int
-	hold    chan struct{}
+	mu           sync.Mutex
+	failing      map[string]int // step to the HTTP status it gets
+	body         string
+	calls        map[string]int
+	hold         chan struct{}
+	neetQuizOnly bool
 }
 
 func (f *fakeAPI) fail(status int, body string, steps ...string) {
@@ -159,10 +173,19 @@ func fakeAnswers(t *testing.T) map[string]string {
 	t.Helper()
 	cards := make([]notes.Flashcard, 10)
 	for i := range cards {
-		cards[i] = notes.Flashcard{Question: "What is immunity?", Answer: "Resistance to disease."}
+		cards[i] = notes.Flashcard{Question: fmt.Sprintf("What is immunity, part %d?", i+1), Answer: "Resistance to disease."}
 	}
-	quiz := make([]notes.Question, 5)
-	for i, kind := range []string{"direct", "statement", "assertion-reason", "match", "direct"} {
+	return map[string]string{
+		"notes":        `{"tldr":"Immunity.","key_points":["Two types."],"sections":[{"start_seconds":0,"title":"Immunity","bullets":["Two types."],"exam_mark":"","exam_quote":""}]}`,
+		"flashcards":   marshal(t, cards),
+		"quiz":         marshal(t, fakeQuiz("direct", "statement", "assertion-reason", "match", "direct")),
+		"general quiz": marshal(t, fakeQuiz("direct", "statement", "direct", "statement", "direct")),
+	}
+}
+
+func fakeQuiz(types ...string) []notes.Question {
+	quiz := make([]notes.Question, len(types))
+	for i, kind := range types {
 		quiz[i] = notes.Question{
 			Type:        kind,
 			Question:    "Statement I: Immunity is resistance.\nStatement II: It is sleep.",
@@ -170,19 +193,16 @@ func fakeAnswers(t *testing.T) map[string]string {
 			Explanation: "It is resistance to disease, not sleep.",
 		}
 	}
-	cardsJSON, err := json.Marshal(cards)
+	return quiz
+}
+
+func marshal(t *testing.T, value any) string {
+	t.Helper()
+	data, err := json.Marshal(value)
 	if err != nil {
 		t.Fatal(err)
 	}
-	quizJSON, err := json.Marshal(quiz)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return map[string]string{
-		"notes":      `{"tldr":"Immunity.","key_points":["Two types."],"sections":[{"start_seconds":0,"title":"Immunity","bullets":["Two types."],"exam_mark":"","exam_quote":""}]}`,
-		"flashcards": string(cardsJSON),
-		"quiz":       string(quizJSON),
-	}
+	return string(data)
 }
 
 func fakeGemini(t *testing.T) (*llm.Client, *fakeAPI) {
@@ -208,6 +228,11 @@ func fakeGemini(t *testing.T) (*llm.Client, *fakeAPI) {
 		status, failing := fake.failing[step]
 		body := fake.body
 		hold := fake.hold
+		answer := answers[step]
+		// Only the NEET prompts name the exam.
+		if step == "quiz" && !strings.Contains(string(data), "NEET") && !fake.neetQuizOnly {
+			answer = answers["general quiz"]
+		}
 		fake.mu.Unlock()
 		if hold != nil {
 			select {
@@ -222,7 +247,7 @@ func fakeGemini(t *testing.T) (*llm.Client, *fakeAPI) {
 		}
 		wrapped, err := json.Marshal(map[string]any{
 			"candidates": []any{map[string]any{
-				"content":      map[string]any{"parts": []any{map[string]any{"text": answers[step]}}},
+				"content":      map[string]any{"parts": []any{map[string]any{"text": answer}}},
 				"finishReason": "STOP",
 			}},
 			"usageMetadata": map[string]any{"promptTokenCount": 1000, "candidatesTokenCount": 100},

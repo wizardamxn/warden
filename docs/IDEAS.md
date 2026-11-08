@@ -27,3 +27,9 @@ Decided 2026-11-08: Warden is a universal study helper, for anyone studying from
 - The engine already allows it: only the prompts and quiz style are NEET-specific.
 - The plan keeps other exams out of scope until NEET students are using it.
 - Coders would be a different product: the notes, the tests and what "done" means all change.
+
+
+
+Some feedback system for the AI so like if something is bad the AI gets a note saying why this was bad and then we make it in the agents memory..
+and if there is a certain threshold is met llike 6 or something like 7 or 67 idk the agents prompt gets re-written..?  
+

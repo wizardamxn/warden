@@ -37,9 +37,16 @@ func (q *Queue) RunNext(ctx context.Context, gemini *llm.Client) (found bool, er
 		return false, err
 	}
 	started := time.Now()
-	ctx = core.LogWith(ctx, "video_id", job.VideoID, "job_id", job.ID)
+	ctx = core.LogWith(ctx, "video_id", job.VideoID, "template", job.Template, "job_id", job.ID)
 	log := core.Log(ctx)
 	log.Info("job claimed")
+	// The database only holds known templates, so this fails only on a code
+	// mistake. found is false, so the worker waits before claiming again.
+	template, err := llm.TemplateFor(job.Template)
+	if err != nil {
+		_ = job.Release(ctx)
+		return false, err
+	}
 	for _, step := range takenBack {
 		log.Warn("took back a step from a stopped worker", "step", step)
 	}
@@ -53,7 +60,7 @@ func (q *Queue) RunNext(ctx context.Context, gemini *llm.Client) (found bool, er
 	}()
 
 	// Every step records its own outcome, so the error here adds nothing.
-	_, _ = pipeline.Run(running, gemini, "https://www.youtube.com/watch?v="+job.VideoID, job)
+	_, _ = pipeline.Run(running, gemini, "https://www.youtube.com/watch?v="+job.VideoID, template, job)
 	stop()
 	<-renewed
 
@@ -65,7 +72,7 @@ func (q *Queue) RunNext(ctx context.Context, gemini *llm.Client) (found bool, er
 		return true, nil
 	}
 
-	view, err := q.Get(ctx, job.VideoID)
+	view, err := q.Get(ctx, job.VideoID, job.Template)
 	if err != nil {
 		return true, err
 	}

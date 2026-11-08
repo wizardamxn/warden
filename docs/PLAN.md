@@ -45,10 +45,10 @@ _Last updated: 2026-10-31_
    _If notes are bad here, nothing else matters._
 2. **NEET prompt templates.** Done on one lecture. Per lecture: notes with the NCERT chapter name + mnemonics, then flashcards and MCQs. Notes, flashcards and quiz are generated separately. Card and question counts scale with lecture length. MCQs use the NEET mix: direct, statement-based, assertion-reason, match-the-column.
 3. **Web app.** Done locally. Player + synced notes.
-4. **Flashcards + quiz screens.** Built, not tested yet.
-5. **Revise tab.**
-6. **Accounts + daily limit.** The student picks a template when they sign up. They can switch it in settings later, for new notes only.
-7. **Templates.** NEET (today's prompts) and General. The worker reads the student's template from the database, and finished notes are reused per video and template.
+4. **Flashcards + quiz screens.** Done, tested with a mocked API.
+5. **Revise tab.** Done, with the library.
+6. **Accounts + daily limit.** Done. The student picks a template when they sign up. They can switch it in settings later, for new notes only.
+7. **Templates.** Built. General's prompts haven't met the real Gemini API yet. NEET (today's prompts) and General. The worker reads the student's template from the database, and finished notes are reused per video and template.
 
 ---
 

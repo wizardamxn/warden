@@ -24,6 +24,32 @@ const (
 	testID   = "VjnHhmST8GY"
 )
 
+// The files a one-off NEET run keeps its steps in.
+var (
+	notesFile      = Steps(llm.NEET)[1].file
+	flashcardsFile = Steps(llm.NEET)[2].file
+	quizFile       = Steps(llm.NEET)[3].file
+)
+
+func TestNEETFilesKeepTheirNames(t *testing.T) {
+	// Lectures made before templates are kept under these names in .work/.
+	if notesFile != "notes-v4.json" || flashcardsFile != "flashcards-v2.json" || quizFile != "quiz-v3.json" {
+		t.Errorf("files = %s, %s, %s", notesFile, flashcardsFile, quizFile)
+	}
+}
+
+func TestTemplatesKeepTheirStepsApart(t *testing.T) {
+	neet, general := Steps(llm.NEET), Steps(llm.General)
+	if neet[0].file != general[0].file {
+		t.Error("both templates should share the transcript")
+	}
+	for i := 1; i < len(neet); i++ {
+		if neet[i].file == general[i].file || neet[i].Version == general[i].Version {
+			t.Errorf("%s: NEET and General share %s / %s", neet[i].Name, neet[i].file, neet[i].Version)
+		}
+	}
+}
+
 // fakeAPI answers each step in its own way. Steps named in failing get an
 // error, and every call is counted by step.
 type fakeAPI struct {
@@ -162,18 +188,18 @@ func TestFinishedStepsAreNotRepeated(t *testing.T) {
 	client, fake := fakeGemini(t)
 	workDir := workDirWithTranscript(t)
 
-	first, err := MakeNote(context.Background(), client, testLink, workDir)
+	first, err := MakeNote(context.Background(), client, testLink, llm.NEET, workDir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := MakeNote(context.Background(), client, testLink, workDir)
+	second, err := MakeNote(context.Background(), client, testLink, llm.NEET, workDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if fake.total() != 3 {
 		t.Errorf("gemini calls = %d, want 3", fake.total())
 	}
-	if first.TLDR == "" || first.TLDR != second.TLDR || second.Title != "Immunity" || second.VideoID != testID {
+	if first.TLDR == "" || first.TLDR != second.TLDR || second.Title != "Immunity" || second.VideoID != testID || second.Template != "neet" {
 		t.Errorf("first = %+v, second = %+v", first, second)
 	}
 	if len(second.Flashcards) != 10 || len(second.Quiz) != 5 || len(second.FailedSteps) != 0 {
@@ -186,7 +212,7 @@ func TestFailedStepRunsAgainWithoutLosingTheTranscript(t *testing.T) {
 	fake.setFailing("notes", "flashcards", "quiz")
 	workDir := workDirWithTranscript(t)
 
-	if _, err := MakeNote(context.Background(), client, testLink, workDir); err == nil {
+	if _, err := MakeNote(context.Background(), client, testLink, llm.NEET, workDir); err == nil {
 		t.Fatal("expected the notes step to fail")
 	}
 	if !stepSaved(t, workDir, transcriptFile) {
@@ -197,7 +223,7 @@ func TestFailedStepRunsAgainWithoutLosingTheTranscript(t *testing.T) {
 	}
 
 	fake.setFailing()
-	if _, err := MakeNote(context.Background(), client, testLink, workDir); err != nil {
+	if _, err := MakeNote(context.Background(), client, testLink, llm.NEET, workDir); err != nil {
 		t.Fatal(err)
 	}
 	if fake.total() != 6 {
@@ -223,7 +249,7 @@ func TestStudyStepFailureKeepsTheRest(t *testing.T) {
 			fake.setFailing(tt.failing)
 			workDir := workDirWithTranscript(t)
 
-			note, err := MakeNote(context.Background(), client, testLink, workDir)
+			note, err := MakeNote(context.Background(), client, testLink, llm.NEET, workDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -238,7 +264,7 @@ func TestStudyStepFailureKeepsTheRest(t *testing.T) {
 			}
 
 			fake.setFailing()
-			retried, err := MakeNote(context.Background(), client, testLink, workDir)
+			retried, err := MakeNote(context.Background(), client, testLink, llm.NEET, workDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -257,7 +283,7 @@ func TestNotesFailureStillSavesTheOtherSteps(t *testing.T) {
 	fake.setFailing("notes")
 	workDir := workDirWithTranscript(t)
 
-	if _, err := MakeNote(context.Background(), client, testLink, workDir); err == nil {
+	if _, err := MakeNote(context.Background(), client, testLink, llm.NEET, workDir); err == nil {
 		t.Fatal("no note means nothing to show, so this must be an error")
 	}
 	if !stepSaved(t, workDir, flashcardsFile) || !stepSaved(t, workDir, quizFile) {
@@ -265,7 +291,7 @@ func TestNotesFailureStillSavesTheOtherSteps(t *testing.T) {
 	}
 
 	fake.setFailing()
-	if _, err := MakeNote(context.Background(), client, testLink, workDir); err != nil {
+	if _, err := MakeNote(context.Background(), client, testLink, llm.NEET, workDir); err != nil {
 		t.Fatal(err)
 	}
 	if fake.step("notes") != 2 || fake.step("flashcards") != 1 || fake.step("quiz") != 1 {
@@ -277,7 +303,7 @@ func TestArraysAreNeverNull(t *testing.T) {
 	client, fake := fakeGemini(t)
 	fake.setFailing("flashcards", "quiz")
 
-	note, err := MakeNote(context.Background(), client, testLink, workDirWithTranscript(t))
+	note, err := MakeNote(context.Background(), client, testLink, llm.NEET, workDirWithTranscript(t))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,7 +318,7 @@ func TestArraysAreNeverNull(t *testing.T) {
 
 func TestBadLinkStopsBeforeAnyWork(t *testing.T) {
 	workDir := t.TempDir()
-	_, err := MakeNote(context.Background(), nil, "https://example.com/video", workDir)
+	_, err := MakeNote(context.Background(), nil, "https://example.com/video", llm.NEET, workDir)
 	if !errors.Is(err, captions.ErrBadLink) {
 		t.Errorf("err = %v", err)
 	}

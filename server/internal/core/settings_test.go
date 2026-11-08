@@ -66,29 +66,39 @@ func TestLoadRejectsBadLine(t *testing.T) {
 }
 
 func TestLoadDefaults(t *testing.T) {
-	for _, name := range []string{"DATABASE_URL", "API_ADDR", "WEB_ORIGIN", "LOG_LEVEL"} {
+	for _, name := range []string{"DATABASE_URL", "API_ADDR", "WEB_ORIGIN", "LOG_LEVEL", "TOTAL_DAILY_CAP", "SAMPLE_VIDEO_ID"} {
 		t.Setenv(name, "")
 	}
 	got, err := Load(writeEnv(t, ""))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.APIAddr != "127.0.0.1:8080" || got.WebOrigin != "http://127.0.0.1:3000" || got.LogLevel != slog.LevelInfo {
+	if got.APIAddr != "127.0.0.1:8080" || got.WebOrigin != "http://127.0.0.1:3000" || got.LogLevel != slog.LevelInfo || got.TotalDailyCap != 0 || got.SampleVideoID != "" {
 		t.Errorf("settings = %+v", got)
 	}
 }
 
 func TestLoadReadsEverySetting(t *testing.T) {
-	for _, name := range []string{"DATABASE_URL", "API_ADDR", "LOG_LEVEL"} {
+	for _, name := range []string{"DATABASE_URL", "API_ADDR", "LOG_LEVEL", "TOTAL_DAILY_CAP", "SAMPLE_VIDEO_ID"} {
 		t.Setenv(name, "")
 	}
 	t.Setenv("WEB_ORIGIN", "https://warden.example/")
-	got, err := Load(writeEnv(t, "DATABASE_URL=postgres://a\nAPI_ADDR=127.0.0.1:9\nLOG_LEVEL=debug\nWEB_ORIGIN=https://file.example\n"))
+	got, err := Load(writeEnv(t, "DATABASE_URL=postgres://a\nAPI_ADDR=127.0.0.1:9\nLOG_LEVEL=debug\nWEB_ORIGIN=https://file.example\nTOTAL_DAILY_CAP=40\nSAMPLE_VIDEO_ID=k7Zb1iOV-ys\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.DatabaseURL != "postgres://a" || got.APIAddr != "127.0.0.1:9" || got.LogLevel != slog.LevelDebug || got.WebOrigin != "https://warden.example" {
+	if got.DatabaseURL != "postgres://a" || got.APIAddr != "127.0.0.1:9" || got.LogLevel != slog.LevelDebug || got.WebOrigin != "https://warden.example" ||
+		got.TotalDailyCap != 40 || got.SampleVideoID != "k7Zb1iOV-ys" {
 		t.Errorf("settings = %+v", got)
+	}
+}
+
+func TestLoadRejectsABadTotalCap(t *testing.T) {
+	for _, value := range []string{"-1", "ten", "2.5"} {
+		t.Setenv("TOTAL_DAILY_CAP", value)
+		if _, err := Load(writeEnv(t, "")); err == nil || !strings.Contains(err.Error(), "TOTAL_DAILY_CAP") {
+			t.Errorf("%s: err = %v", value, err)
+		}
 	}
 }
 

@@ -53,8 +53,39 @@ All of these were found on 2026-10-31, on one 68-minute Biology lecture. Details
 - Problem: a video with no captions, or one that's too long, still shows Try again. It fails the same way, but costs no AI calls.
 - Likely fix: send a flag from the API saying a retry can't help.
 
-## Study screens are untested
+## Study screens: real player untested
 
-- Found: M06.
-- Problem: the flashcard and answer sheet screens were built without any testing, by choice. Nothing has been seen working in a browser.
-- Likely fix: open a finished note and try every view, then add Playwright tests for scoring, keys and Watch.
+- Found: M06. Scoring, card keys and Watch from Revise now have Playwright tests (M08).
+- Problem: nobody has used the screens with the real YouTube player, a screen reader, or measured contrast.
+- Likely fix: one sitting with a finished note in the browser.
+
+## No email check or password reset
+
+- Found: M07.
+- Problem: there's no email service, so emails aren't confirmed and a forgotten password can't be reset.
+- Likely fix: an email provider, then a confirm link and a reset link.
+
+## Signup isn't throttled, login throttling is in memory
+
+- Found: M07.
+- Problem: accounts can be made in bulk, so the total cap is the real limit on the AI bill. Login throttling forgets everything on a restart and only works with one API process.
+- Likely fix: pick a `TOTAL_DAILY_CAP` before going public; throttle signup per address; keep throttle counts in Postgres if there's ever more than one API process.
+
+## General template is untested on the real API
+
+- Found: M07.
+- Problem: the General prompts have only met a fake Gemini. Their notes, cards and quiz quality are unknown.
+- Likely fix: one real run on a non-NEET lecture, then read the result.
+
+## Smaller limits from M07 and M08
+
+- The sample lecture must be loaded again after a NEET prompt change.
+- The library reads titles out of each large saved transcript, and Revise sends every card with no paging.
+- `/notes/<id>` opens the newest-template note, so an older-template library row opens the newer note.
+- The daily count on the home page is from page load and doesn't change at midnight.
+
+## Motion and dark mode, 2026-11-08
+
+- Dark mode's contrast was checked by eye and by hand-worked numbers on the main colours, not measured on every screen.
+- The still-to-player growth only plays going into a note: going back, the library loads its list after the page appears, so there's nothing to grow back into.
+- Lecture stills load from YouTube's image server (`i.ytimg.com`), so YouTube sees which stills a student's library shows. The player already talks to YouTube, so this adds little.

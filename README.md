@@ -63,9 +63,10 @@ flowchart LR
   2  notes, cards, quiz          ████████████  done
   3  website + synced notes      ████████████  done
   ·  Go API, jobs, logger        ████████████  done
-  4  flashcards + answer sheet   ██████████░░  built, untested
-  5  revise tab                  ░░░░░░░░░░░░
-  6  accounts + daily limit      ░░░░░░░░░░░░
+  4  flashcards + answer sheet   ████████████  done
+  5  revise tab + library        ████████████  done
+  6  accounts + daily limit      ████████████  done
+  7  templates: NEET + General   ██████████░░  built, General untested on Gemini
 ```
 
 ## Run it locally
@@ -79,7 +80,9 @@ npm install
 npm run dev              # http://127.0.0.1:3000
 ```
 
-The API has no login yet, so it only listens on `127.0.0.1`. Don't expose it until accounts exist.
+Open http://127.0.0.1:3000, not localhost: the login cookie only works when the website and the API share an address. To load the sample lecture once: `cd server`, then `go run ./cmd/sample -video k7Zb1iOV-ys -note ../apps/web/fixtures/k7Zb1iOV-ys.json`, and add `SAMPLE_VIDEO_ID=k7Zb1iOV-ys` to `server/.env`.
+
+Accounts exist now, but the API isn't ready to go public yet: see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 Full plan, MVP scope and build order: [docs/PLAN.md](docs/PLAN.md). Design rules: [docs/DESIGN.md](docs/DESIGN.md). Milestones: [docs/milestones](docs/milestones/README.md).
 

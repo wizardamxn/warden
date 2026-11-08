@@ -22,12 +22,8 @@ import (
 // CaptionsVersion plays the prompt version's part for the captions step.
 const CaptionsVersion = "v1"
 
-const (
-	transcriptFile = "transcript.json"
-	notesFile      = "notes-" + llm.NotePromptVersion + ".json"
-	flashcardsFile = "flashcards-" + llm.FlashcardPromptVersion + ".json"
-	quizFile       = "quiz-" + llm.QuizPromptVersion + ".json"
-)
+// The transcript is the same whatever the template, so one-off runs share it.
+const transcriptFile = "transcript.json"
 
 // Step is one step of the pipeline. A saved result is reused only while its
 // Version stays the same.
@@ -37,15 +33,18 @@ type Step struct {
 	file    string // where a one-off run keeps it
 }
 
-var (
-	captionsStep   = Step{"captions", CaptionsVersion, transcriptFile}
-	notesStep      = Step{"notes", llm.NotePromptVersion, notesFile}
-	flashcardsStep = Step{"flashcards", llm.FlashcardPromptVersion, flashcardsFile}
-	quizStep       = Step{"quiz", llm.QuizPromptVersion, quizFile}
-)
+// StepNames lists every step in the order they run.
+var StepNames = []string{"captions", "notes", "flashcards", "quiz"}
 
-// Steps lists every step in the order they run.
-var Steps = []Step{captionsStep, notesStep, flashcardsStep, quizStep}
+// Steps lists a template's steps in the order they run, with its prompt versions.
+func Steps(t llm.Template) []Step {
+	return []Step{
+		{"captions", CaptionsVersion, transcriptFile},
+		{"notes", t.NoteVersion, "notes-" + t.NoteVersion + ".json"},
+		{"flashcards", t.FlashcardVersion, "flashcards-" + t.FlashcardVersion + ".json"},
+		{"quiz", t.QuizVersion, "quiz-" + t.QuizVersion + ".json"},
+	}
+}
 
 // Store keeps each step's result: local files for a one-off run, Postgres for
 // the worker's jobs. Both run the same pipeline.
@@ -69,7 +68,7 @@ type transcript struct {
 
 // MakeNote is the one-off run: it makes the note for one link, keeping each
 // lecture's finished steps in workDir.
-func MakeNote(ctx context.Context, gemini *llm.Client, link, workDir string) (notes.Note, error) {
+func MakeNote(ctx context.Context, gemini *llm.Client, link string, t llm.Template, workDir string) (notes.Note, error) {
 	id, err := captions.VideoID(link)
 	if err != nil {
 		return notes.Note{}, err
@@ -78,33 +77,35 @@ func MakeNote(ctx context.Context, gemini *llm.Client, link, workDir string) (no
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return notes.Note{}, err
 	}
-	return Run(core.LogWith(ctx, "video_id", id), gemini, link, fileStore{dir})
+	return Run(core.LogWith(ctx, "video_id", id), gemini, link, t, fileStore{dir})
 }
 
 // Run does every step that still needs doing. The three AI steps don't depend
 // on each other, so all of them run even if one fails. Without notes there's
 // nothing to show, so that's an error. A failed flashcards or quiz step comes
 // back in the note's FailedSteps instead.
-func Run(ctx context.Context, gemini *llm.Client, link string, store Store) (notes.Note, error) {
-	t, transcriptErr := transcriptStep(ctx, link, store)
+func Run(ctx context.Context, gemini *llm.Client, link string, tmpl llm.Template, store Store) (notes.Note, error) {
+	steps := Steps(tmpl)
+	captionsStep, notesStep, flashcardsStep, quizStep := steps[0], steps[1], steps[2], steps[3]
+	t, transcriptErr := transcriptStep(ctx, link, captionsStep, store)
 
 	note, notesErr := runStep(ctx, store, notesStep, func(ctx context.Context) (notes.Note, llm.Usage, error) {
 		if transcriptErr != nil {
 			return notes.Note{}, llm.Usage{}, transcriptErr
 		}
-		return llm.MakeNote(ctx, gemini, t.Video, t.Lines)
+		return llm.MakeNote(ctx, gemini, tmpl, t.Video, t.Lines)
 	})
 	cards, cardsErr := runStep(ctx, store, flashcardsStep, func(ctx context.Context) ([]notes.Flashcard, llm.Usage, error) {
 		if transcriptErr != nil {
 			return nil, llm.Usage{}, transcriptErr
 		}
-		return llm.MakeFlashcards(ctx, gemini, t.Video, t.Lines)
+		return llm.MakeFlashcards(ctx, gemini, tmpl, t.Video, t.Lines)
 	})
 	quiz, quizErr := runStep(ctx, store, quizStep, func(ctx context.Context) ([]notes.Question, llm.Usage, error) {
 		if transcriptErr != nil {
 			return nil, llm.Usage{}, transcriptErr
 		}
-		return llm.MakeQuiz(ctx, gemini, t.Video, t.Lines)
+		return llm.MakeQuiz(ctx, gemini, tmpl, t.Video, t.Lines)
 	})
 	if notesErr != nil {
 		return notes.Note{}, notesErr
@@ -117,11 +118,13 @@ func Run(ctx context.Context, gemini *llm.Client, link string, store Store) (not
 	if quizErr != nil {
 		failed = append(failed, quizStep.Name)
 	}
-	return Assemble(note, cards, quiz, failed), nil
+	return Assemble(note, tmpl.Name, cards, quiz, failed), nil
 }
 
-// Assemble puts the separately saved parts together as one note.
-func Assemble(note notes.Note, cards []notes.Flashcard, quiz []notes.Question, failed []string) notes.Note {
+// Assemble puts the separately saved parts together as one note. The template
+// comes from the job, never from the AI's answer.
+func Assemble(note notes.Note, template string, cards []notes.Flashcard, quiz []notes.Question, failed []string) notes.Note {
+	note.Template = template
 	note.KeyPoints = orEmpty(note.KeyPoints)
 	note.Sections = orEmpty(note.Sections)
 	for i := range note.Sections {
@@ -146,7 +149,7 @@ func orEmpty[T any](list []T) []T {
 	return list
 }
 
-func transcriptStep(ctx context.Context, link string, store Store) (transcript, error) {
+func transcriptStep(ctx context.Context, link string, captionsStep Step, store Store) (transcript, error) {
 	t, err := runStep(ctx, store, captionsStep, func(ctx context.Context) (transcript, llm.Usage, error) {
 		tempDir, err := os.MkdirTemp("", "warden-")
 		if err != nil {

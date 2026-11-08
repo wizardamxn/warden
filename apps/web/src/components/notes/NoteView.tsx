@@ -5,9 +5,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Section } from "@/lib/api/notes";
 import { isTyping } from "@/lib/keys";
 import { formatTime } from "@/lib/time";
-import { watchUrlAt } from "@/lib/youtube";
+import { thumbnailUrl, watchUrlAt } from "@/lib/youtube";
 import { AnswerSheet } from "../study/AnswerSheet";
 import { Flashcards } from "../study/Flashcards";
+import { Watch } from "../study/Watch";
+import { Lecture } from "../ui/Arrive";
+import { Nav } from "../ui/Nav";
 import { NotReady, StatusLine, Waiting, type ProgressProps } from "./Progress";
 import { useYouTubePlayer } from "./useYouTubePlayer";
 
@@ -23,8 +26,17 @@ function playingIndex(sections: Section[], seconds: number): number {
   return sections.reduce((playing, section, index) => (seconds >= section.start_seconds ? index : playing), -1);
 }
 
+type Props = {
+  videoId: string;
+  // Seconds to open the video at, from a Watch link in Revise. 0 starts at the beginning.
+  start: number;
+  // Undefined while unknown. Shapes the top line only.
+  signedIn?: boolean;
+  sample?: boolean;
+} & ProgressProps;
+
 // Stays mounted from the first wait to the finished note, so polling and the note arriving never rebuild the player.
-export function NoteView({ videoId, ...progress }: { videoId: string } & ProgressProps) {
+export function NoteView({ videoId, start, signedIn, sample, ...progress }: Props) {
   const { job } = progress;
   const note = job?.note ?? null;
   const hasNote = note !== null;
@@ -38,7 +50,7 @@ export function NoteView({ videoId, ...progress }: { videoId: string } & Progres
 
   const frame = useRef<HTMLDivElement>(null);
   const headings = useRef<(HTMLHeadingElement | null)[]>([]);
-  const [time, setTime] = useState(0);
+  const [time, setTime] = useState(start);
   const [focus, setFocus] = useState(false);
   // Only the right column changes with the view; the player is never rebuilt.
   const [view, setView] = useState<View>("notes");
@@ -47,6 +59,12 @@ export function NoteView({ videoId, ...progress }: { videoId: string } & Progres
   // Whole seconds, so the page redraws only when the second changes.
   const onTime = useCallback((seconds: number) => setTime(Math.floor(seconds)), []);
   const { blocked, seek } = useYouTubePlayer(frame, videoId, onTime);
+
+  // The player seeks once it's ready; the highlight starts there straight away.
+  useEffect(() => {
+    if (start) seek(start);
+  }, [start, seek]);
+
   const live = blocked ? -1 : playingIndex(sections, time);
   const focusOn = focus && !blocked && hasNote && view === "notes";
 
@@ -90,26 +108,34 @@ export function NoteView({ videoId, ...progress }: { videoId: string } & Progres
       {/* Each of the four finished steps brings the light closer, up to its full size. */}
       {(job || progress.problem) && <div className="glow" style={{ transform: `scale(${0.6 + finishedSteps * 0.1})` }} aria-hidden="true" />}
       <div className="wrap">
-        <div className="nav">
-          <Link className="brand" href="/">
-            Warden
-          </Link>
+        <Nav
+          signedIn={signedIn}
+          end={
+            hasNote &&
+            !blocked &&
+            view === "notes" && (
+              <button className="quiet" type="button" aria-keyshortcuts="f" aria-pressed={focusOn} onClick={() => setFocus(!focus)}>
+                {focusOn ? "Leave focus (F)" : "Focus (F)"}
+              </button>
+            )
+          }
+        >
           {hasNote &&
             VIEWS.map(([name, label]) => (
               <button className="quiet view" type="button" key={name} aria-current={view === name} onClick={() => show(name)}>
                 {label}
               </button>
             ))}
-          {hasNote && !blocked && view === "notes" && (
-            <button className="quiet push" type="button" aria-keyshortcuts="f" aria-pressed={focusOn} onClick={() => setFocus(!focus)}>
-              {focusOn ? "Leave focus (F)" : "Focus (F)"}
-            </button>
-          )}
-        </div>
+        </Nav>
 
         <main className="cols">
           <div className="left">
-            {!blocked && <div className="player" ref={frame} />}
+            {!blocked && (
+              <Lecture videoId={videoId}>
+                {/* YouTube's still shows until its player covers it, so the library's still has somewhere to grow into. */}
+                <div className="player" ref={frame} style={{ backgroundImage: `url(${thumbnailUrl(videoId)})` }} />
+              </Lecture>
+            )}
             <div className="lecture">
               {note && (
                 <>
@@ -118,6 +144,15 @@ export function NoteView({ videoId, ...progress }: { videoId: string } & Progres
                     {note.channel}, {formatTime(note.duration_seconds)}
                   </p>
                   {note.ncert_chapter && <p className="sub">NCERT chapter: {note.ncert_chapter}</p>}
+                  {sample && signedIn === false && (
+                    <p className="sub">
+                      A sample lecture.{" "}
+                      <Link className="link" href="/signup">
+                        Sign up
+                      </Link>{" "}
+                      to make notes from your own.
+                    </p>
+                  )}
                   <StatusLine {...progress} />
                 </>
               )}
@@ -230,13 +265,25 @@ export function NoteView({ videoId, ...progress }: { videoId: string } & Progres
               <>
                 <div hidden={view !== "cards"}>
                   {cards.length > 0 ? (
-                    <Flashcards cards={cards} active={view === "cards"} videoId={videoId} onWatch={watch} onDone={() => show("sheet")} />
+                    <Flashcards
+                      cards={cards}
+                      active={view === "cards"}
+                      link={(card) => <Watch videoId={videoId} seconds={card.start_seconds} onWatch={watch} />}
+                      end={
+                        <>
+                          <p>That&apos;s all {cards.length} cards.</p>
+                          <button className="primary" type="button" onClick={() => show("sheet")}>
+                            Open the answer sheet
+                          </button>
+                        </>
+                      }
+                    />
                   ) : (
                     <NotReady part="flashcards" {...progress} />
                   )}
                 </div>
                 <div hidden={view !== "sheet"}>
-                  {quiz.length > 0 ? <AnswerSheet quiz={quiz} videoId={videoId} onWatch={watch} /> : <NotReady part="quiz" {...progress} />}
+                  {quiz.length > 0 ? <AnswerSheet quiz={quiz} template={note.template ?? "neet"} videoId={videoId} onWatch={watch} /> : <NotReady part="quiz" {...progress} />}
                 </div>
               </>
             )}

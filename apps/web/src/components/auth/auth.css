@@ -1,0 +1,94 @@
+/* Log in, sign up and settings: a short form on the paper, left-aligned like the home page. */
+.auth {
+  max-width: 672px;
+}
+
+.auth h1 {
+  font-size: 38px;
+}
+
+.auth form {
+  margin-top: 40px;
+  max-width: 560px;
+}
+
+.field {
+  margin-bottom: 32px;
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+
+.field .sub,
+.field .problem {
+  display: block;
+  margin-top: 8px;
+}
+
+/* The template choice: two bubbles with a line about each. */
+.templates {
+  margin: 0 0 8px;
+  padding: 0;
+  border: 0;
+}
+
+.templates legend {
+  padding: 0;
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+
+.templates > .sub {
+  margin-top: 4px;
+}
+
+.choice {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 0 0;
+  cursor: pointer;
+}
+
+.choice .bubble {
+  margin-top: 4px;
+}
+
+.choice .name {
+  display: block;
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.choice .sub {
+  display: block;
+  max-width: 52ch;
+}
+
+.templates > .problem {
+  margin-top: 8px;
+}
+
+.auth .status {
+  min-height: 24px;
+  margin: 16px 0;
+}
+
+.theme {
+  margin-top: 64px;
+}
+
+.account {
+  margin-top: 64px;
+  padding-top: 24px;
+  border-top: 1px solid var(--hairline);
+}
+
+.out {
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

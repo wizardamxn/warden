@@ -1,6 +1,11 @@
+import type { Template } from "./account";
+import { call, read, send } from "./client";
+
 // The parts of a note this website shows. Older notes may lack the optional fields,
 // and Go writes an empty list as null, so lists are read with `?? []`.
 export type Note = {
+  // Older notes were all made before templates, with the NEET one.
+  template?: Template;
   title: string;
   channel: string;
   duration_seconds: number;
@@ -44,6 +49,25 @@ export type Step = {
   error: string;
 };
 
+// One past note in the student's library, newest first. `title` is "" until the captions step is done.
+export type LibraryNote = {
+  video_id: string;
+  title: string;
+  channel: string;
+  duration_seconds: number;
+  template: Template;
+  added_at: string;
+  status: NoteJob["status"];
+};
+
+// A flashcard waiting in Revise, with the lecture it came from.
+export type ReviseCard = Flashcard & {
+  video_id: string;
+  title: string;
+  template: Template;
+  added_at: string;
+};
+
 // `note` appears once the notes step is done. `partial`: the note exists but flashcards or quiz failed. `failed`: no note exists.
 export type NoteJob = {
   video_id: string;
@@ -53,51 +77,43 @@ export type NoteJob = {
   error: string;
 };
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8080";
-// A server that takes the connection and then hangs must not leave the page waiting forever.
-const TIMEOUT_MS = 10_000;
-const DOWN = "Warden's server isn't answering. Give it a minute.";
-
-async function call(path: string, init: RequestInit = {}): Promise<Response> {
-  const timeout = AbortSignal.timeout(TIMEOUT_MS);
-  try {
-    return await fetch(`${API}${path}`, { ...init, signal: init.signal ? AbortSignal.any([init.signal, timeout]) : timeout });
-  } catch (problem) {
-    if (init.signal?.aborted) throw problem;
-    throw new Error(DOWN);
-  }
-}
-
-async function read(response: Response): Promise<NoteJob> {
-  const body = await response.json().catch(() => null);
-  if (!response.ok || !body) throw new Error(body?.error || DOWN);
-  return { ...body, steps: body.steps ?? [] };
-}
-
 // Nothing more will happen without a retry, so polling can stop.
 export function isFinished(job: NoteJob): boolean {
   return ["done", "partial", "failed"].includes(job.status);
 }
 
-// Starts the note if it doesn't exist yet, and returns straight away.
-export async function makeNote(url: string): Promise<NoteJob> {
-  return read(
-    await call("/v1/notes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-    }),
-  );
+async function readJob(response: Response): Promise<NoteJob> {
+  const body = await read<NoteJob>(response);
+  return { ...body, steps: body.steps ?? [] };
 }
 
-// Returns null when no note exists for this video.
+// Starts the note if it doesn't exist yet, and returns straight away.
+export async function makeNote(url: string): Promise<NoteJob> {
+  return readJob(await send("/v1/notes", "POST", { url }));
+}
+
+// Returns null when no note exists for this video in the student's library.
 export async function getNote(videoId: string, signal: AbortSignal): Promise<NoteJob | null> {
   const response = await call(`/v1/notes/${videoId}`, { signal });
-  return response.status === 404 ? null : read(response);
+  return response.status === 404 ? null : readJob(response);
+}
+
+// The finished sample lecture, open without a login. Null when none is set up.
+export async function getSample(signal: AbortSignal): Promise<NoteJob | null> {
+  const response = await call("/v1/sample", { signal });
+  return response.status === 404 ? null : readJob(response);
 }
 
 // Re-queues only the failed steps. Returns null when no note exists for this video.
 export async function retryNote(videoId: string): Promise<NoteJob | null> {
-  const response = await call(`/v1/notes/${videoId}/retry`, { method: "POST" });
-  return response.status === 404 ? null : read(response);
+  const response = await send(`/v1/notes/${videoId}/retry`, "POST");
+  return response.status === 404 ? null : readJob(response);
+}
+
+export async function getLibrary(): Promise<LibraryNote[]> {
+  return (await read<{ notes: LibraryNote[] }>(await call("/v1/library"))).notes;
+}
+
+export async function getRevise(): Promise<ReviseCard[]> {
+  return (await read<{ cards: ReviseCard[] }>(await call("/v1/revise"))).cards;
 }

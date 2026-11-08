@@ -1,21 +1,4 @@
 /* Home: the paste form */
-.home {
-  max-width: 880px;
-  padding: 120px 0 0 96px;
-}
-
-.home h1 {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.home .lead {
-  margin: 0 0 40px;
-  font-size: 24px;
-  line-height: 1.4;
-  color: var(--ink-soft);
-}
-
 .paste {
   display: flex;
   flex-wrap: wrap;
@@ -30,22 +13,41 @@
   color: var(--ink-soft);
 }
 
-.paste input {
-  display: block;
-  width: 100%;
-  min-height: 48px;
-  border: 0;
-  border-bottom: 1.5px solid var(--input-line);
-  border-radius: 0;
-  background: none;
-  color: var(--ink);
-  font-family: var(--serif);
-  font-size: 19px;
-}
-
 .home .status {
   margin-top: 24px;
   max-width: 640px;
+}
+
+.home .count {
+  margin-top: 8px;
+}
+
+/* Home, logged in: what's already on the desk, under the paste box. Separated by space, not boxes. */
+.desk {
+  margin-top: 96px;
+}
+
+.waiting-cards {
+  margin-bottom: 64px;
+  max-width: 62ch;
+}
+
+.waiting-cards p {
+  margin: 0 0 4px;
+  font-size: 24px;
+  line-height: 1.4;
+}
+
+.desk .label {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.desk .shelf {
+  margin-top: 24px;
 }
 
 /* Note page */
@@ -75,7 +77,7 @@
 .player {
   position: relative;
   aspect-ratio: 16 / 9;
-  background: var(--frame);
+  background: var(--frame) center / cover no-repeat;
   border-radius: 3px;
   overflow: hidden;
 }
@@ -281,10 +283,6 @@
   opacity: 1;
 }
 
-.push {
-  margin-left: auto;
-}
-
 /* Notes, Flashcards, Answer sheet: the view on screen is ink and underlined, so it's not told by colour alone. */
 .nav .brand {
   margin-right: 16px;
@@ -297,11 +295,13 @@
   text-underline-offset: 8px;
 }
 
-.view {
+.view,
+.site {
   transition: opacity 0.3s ease-out;
 }
 
-.focus .view {
+.focus .view,
+.focus .site {
   opacity: 0;
   visibility: hidden;
 }
@@ -354,14 +354,6 @@
 }
 
 @media (max-width: 700px) {
-  .home {
-    padding: 48px 0 0;
-  }
-
-  .home h1 {
-    font-size: 38px;
-  }
-
   .sec {
     grid-template-columns: 64px minmax(0, 1fr);
   }

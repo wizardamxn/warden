@@ -20,9 +20,6 @@ const (
 	maxQuestions       = 20
 )
 
-// quizTypes is the NEET mix. A quiz needs all of them.
-var quizTypes = []string{"direct", "statement", "assertion-reason", "match"}
-
 // worthTesting is what to pick first, for flashcards and quiz alike.
 const worthTesting = `- Choose what's worth testing, in this order: first everything the teacher says came in NEET or calls a previous year question or PYQ, then what the teacher calls important, then exceptions and things students mix up, then definitions and lists. Finish each group before starting the next. Use the whole lecture, not only the start.
 - start_seconds is the number in brackets on the line where the teacher states that exact fact, copied exactly. Not the line where the topic first comes up.`
@@ -92,11 +89,11 @@ func targetCount(durationSeconds, secondsPerItem, lowest, highest int) int {
 }
 
 // MakeFlashcards asks Gemini for flashcards and checks them.
-func MakeFlashcards(ctx context.Context, client *Client, video captions.Video, lines []captions.Line) ([]notes.Flashcard, Usage, error) {
+func MakeFlashcards(ctx context.Context, client *Client, t Template, video captions.Video, lines []captions.Line) ([]notes.Flashcard, Usage, error) {
 	target := targetCount(video.DurationSeconds, secondsPerFlashcard, minFlashcards, maxFlashcards)
 	return ask(ctx, client, request[[]notes.Flashcard]{
 		step:         "flashcards",
-		instructions: flashcardInstructions,
+		instructions: t.flashcardInstructions,
 		schema:       flashcardSchema,
 		prompt:       fmt.Sprintf("Write %d flashcards.\n\n%s", target, lecturePrompt(video, lines)),
 		check: func(cards *[]notes.Flashcard) []string {
@@ -109,18 +106,18 @@ func MakeFlashcards(ctx context.Context, client *Client, video captions.Video, l
 }
 
 // MakeQuiz asks Gemini for quiz questions and checks them.
-func MakeQuiz(ctx context.Context, client *Client, video captions.Video, lines []captions.Line) ([]notes.Question, Usage, error) {
+func MakeQuiz(ctx context.Context, client *Client, t Template, video captions.Video, lines []captions.Line) ([]notes.Question, Usage, error) {
 	target := targetCount(video.DurationSeconds, secondsPerQuestion, minQuestions, maxQuestions)
 	quiz, usage, err := ask(ctx, client, request[[]notes.Question]{
 		step:         "quiz",
-		instructions: quizInstructions,
-		schema:       quizSchema,
+		instructions: t.quizInstructions,
+		schema:       t.quizSchema,
 		prompt:       fmt.Sprintf("Write %d questions.\n\n%s", target, lecturePrompt(video, lines)),
 		check: func(quiz *[]notes.Question) []string {
 			for i := range *quiz {
 				(*quiz)[i].StartSeconds = snapToLine((*quiz)[i].StartSeconds, lines)
 			}
-			return CheckQuiz(*quiz, video.DurationSeconds, lines)
+			return CheckQuiz(*quiz, t.QuizTypes, video.DurationSeconds, lines)
 		},
 	})
 	if err == nil {

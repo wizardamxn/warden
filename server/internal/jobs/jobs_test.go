@@ -40,7 +40,7 @@ func TestOverallStatus(t *testing.T) {
 }
 
 func TestBuildViewShowsTheNoteAsSoonAsItExists(t *testing.T) {
-	view, err := buildView("abc", true, []stepRow{
+	view, err := buildView("abc", "neet", true, []stepRow{
 		{Name: "captions", Status: "done"},
 		{Name: "notes", Status: "done", Result: []byte(`{"video_id":"abc","title":"Immunity"}`)},
 		{Name: "flashcards", Status: "failed", Error: "Plain words."},
@@ -67,7 +67,7 @@ func TestBuildViewShowsTheNoteAsSoonAsItExists(t *testing.T) {
 }
 
 func TestBuildViewWithoutANote(t *testing.T) {
-	view, err := buildView("abc", false, []stepRow{
+	view, err := buildView("abc", "neet", false, []stepRow{
 		{Name: "captions", Status: "done"},
 		{Name: "notes", Status: "failed", Error: "Plain words."},
 		{Name: "flashcards", Status: "done", Result: []byte(`[]`)},

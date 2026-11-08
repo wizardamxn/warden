@@ -2,6 +2,16 @@
 
 Turns a transcript into notes, flashcards and quizzes with Gemini.
 
+## Templates
+
+A template is the three prompts, their schemas, their versions and the quiz's question types.
+
+- `neet`: the prompts built in M02, unchanged, at versions v4, v2 and v3. NCERT chapter, exam marks, and a quiz needing direct, statement, assertion-reason and match questions.
+- `general`: any subject. No NCERT, no NEET, no exam marks. The quiz mixes only direct and statement questions. Versions start at `general-v1`.
+- Both keep the same English-only, timestamp and option checks. `CheckQuiz` takes the template's question types: each is needed, and no other is allowed.
+- Direct and match options are shuffled for both, as before.
+- The General prompts have never been run against the real Gemini API. Only fakes have answered them.
+
 ## When Gemini refuses
 
 - 503 (too busy): wait and try again, up to 5 attempts.

@@ -1,9 +1,20 @@
 // Package notes holds the note's shape, so every part of the server uses the same one.
 package notes
 
+// The templates a student can pick. A template sets how notes, flashcards and
+// the quiz are made, and how the website scores the quiz.
+const (
+	NEET    = "neet"
+	General = "general"
+)
+
+// Templates lists every template.
+var Templates = []string{NEET, General}
+
 // Note is one finished note for one lecture.
 type Note struct {
 	VideoID         string         `json:"video_id"`
+	Template        string         `json:"template"` // filled in by Go from the job, never by the AI
 	Title           string         `json:"title"`
 	Channel         string         `json:"channel"`
 	DurationSeconds int            `json:"duration_seconds"`
@@ -47,9 +58,9 @@ type Flashcard struct {
 	StartSeconds int    `json:"start_seconds"`
 }
 
-// Question is one NEET style quiz question.
+// Question is one quiz question.
 type Question struct {
-	Type         string   `json:"type"` // "direct", "statement", "assertion-reason" or "match"
+	Type         string   `json:"type"` // "direct", "statement", and for NEET also "assertion-reason" or "match"
 	Question     string   `json:"question"`
 	Options      []string `json:"options"`      // always 4
 	AnswerIndex  int      `json:"answer_index"` // 0 to 3

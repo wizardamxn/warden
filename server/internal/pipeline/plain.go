@@ -25,7 +25,7 @@ func PlainError(step string, err error) string {
 		return "This video has no fixed length. It may be a live stream."
 	case errors.Is(err, captions.ErrNoCaptions):
 		return "This video has no English or Hindi captions."
-	case step == captionsStep.Name, errors.Is(err, errNoTranscript):
+	case step == "captions", errors.Is(err, errNoTranscript):
 		return "We couldn't read this video from YouTube. Please try again."
 	}
 	return "Something went wrong making the " + step + ". Please try again."

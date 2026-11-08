@@ -48,7 +48,7 @@ func goodQuiz() []notes.Question {
 	quiz := make([]notes.Question, minQuestions)
 	for i := range quiz {
 		quiz[i] = notes.Question{
-			Type:         quizTypes[i%len(quizTypes)],
+			Type:         NEET.QuizTypes[i%len(NEET.QuizTypes)],
 			Question:     "Statement I: T cells form in the bone marrow.\nStatement II: They differentiate in the thymus.",
 			Options:      []string{"Thymus", "Bone marrow", "Spleen", "Liver"},
 			AnswerIndex:  1,
@@ -94,7 +94,7 @@ func TestStudyStepsSnapTimesWithoutAFixUp(t *testing.T) {
 		t.Fatal(err)
 	}
 	client, requests := fakeGemini(t, reply(string(answer)))
-	got, _, err := MakeFlashcards(context.Background(), client, captions.Video{DurationSeconds: 100}, testLines)
+	got, _, err := MakeFlashcards(context.Background(), client, NEET, captions.Video{DurationSeconds: 100}, testLines)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,7 +216,7 @@ func TestCheckQuiz(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			quiz := goodQuiz()
 			tt.change(&quiz)
-			problems := CheckQuiz(quiz, 100, testLines)
+			problems := CheckQuiz(quiz, NEET.QuizTypes, 100, testLines)
 			if tt.want == "" {
 				if len(problems) != 0 {
 					t.Errorf("unexpected problems: %v", problems)

@@ -36,6 +36,11 @@ export function canonicalUrl(videoId: string): string {
   return `https://www.youtube.com/watch?v=${videoId}`;
 }
 
+// YouTube's own still of the video, 320 by 180. Needs no API key.
+export function thumbnailUrl(videoId: string): string {
+  return `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
+}
+
 export function watchUrlAt(videoId: string, seconds: number): string {
   return `${canonicalUrl(videoId)}&t=${Math.floor(seconds)}s`;
 }

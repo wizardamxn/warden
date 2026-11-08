@@ -1,6 +1,6 @@
 # Jobs
 
-The job list: the API adds a job, the worker claims it and runs its steps. Two tables, `jobs` (one row per video) and `job_steps` (one row per step).
+The job list: the API adds a job, the worker claims it and runs its steps. Two tables, `jobs` (one row per video and template) and `job_steps` (one row per step). Each student's `library` lives here too, because it points at jobs.
 
 ## Save on every step
 
@@ -44,4 +44,22 @@ Worked out from the steps every time, never stored:
 
 ## Reusing saved results
 
-Results are saved by YouTube video ID and prompt version. If a second student pastes the same lecture, they get the saved note with no AI call. A new prompt version generates it fresh, and only for the steps whose prompt changed, the next time someone requests that lecture.
+Results are saved by YouTube video ID, template and prompt version. If a second student pastes the same lecture under the same template, they get the saved note with no AI call. The same lecture under the other template is a second job, made with that template's prompts. A new prompt version generates it fresh, and only for the steps whose prompt changed, the next time someone requests that lecture.
+
+The worker reads each job's template from the database and runs the pipeline with it.
+
+## Library and Revise
+
+- A student's library is a row per lecture and template, with `added_at`. Adding the same lecture again keeps the first `added_at`.
+- Adding a lecture checks the [limits](../limits/ARCHITECTURE.md) and makes the job in the same transaction.
+- The library list shows each lecture's title, channel and length from its saved captions (empty until then) and the job's status, newest first.
+- Revise sends the flashcards of every lecture added more than 2 days ago, oldest lecture first. No algorithm, just the date.
+- Every query filters by the student's own user ID.
+
+shortcut: the library reads titles out of each saved transcript, which is large. Copy title, channel and length onto `jobs` if the library gets slow.
+
+## The sample lecture
+
+`SaveFinished` stores a whole note made elsewhere as a finished NEET job. `cmd/sample` uses it.
+
+shortcut: a note has no transcript, so the sample's captions step is saved with no lines and a new prompt version can't remake it. Load the sample again after a prompt change.

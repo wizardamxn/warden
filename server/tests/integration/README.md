@@ -5,3 +5,4 @@ Tests that run against a real Postgres, because claiming and saving depend on wh
 - From `server/`: `go test -count=1 ./tests/integration`
 - They use the local Postgres from `deploy/compose.yaml`, or `TEST_DATABASE_URL` if set. With neither reachable they skip, and the skip message says why. Run with `-v` to see it: a plain `ok` can mean every test skipped.
 - `DATABASE_URL` is never used, so tests can't reach a real database. Each test makes its own schema and drops it.
+- The API tests sign students up through the real routes, each with their own cookies, and send `CF-Connecting-IP` to stand in for the tunnel.

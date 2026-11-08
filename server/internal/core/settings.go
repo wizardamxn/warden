@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -21,6 +22,13 @@ type Settings struct {
 	APIAddr     string
 	WebOrigin   string
 	LogLevel    slog.Level
+	// TotalDailyCap is how many new jobs all students together may start each
+	// day, India time. 0 means no cap.
+	TotalDailyCap int
+	// SampleVideoID is the finished note anyone can open before signing up.
+	SampleVideoID string
+	// YTDLPCookies is the path to a cookies.txt yt-dlp sends to YouTube.
+	YTDLPCookies string
 }
 
 // Load reads settings from the env file, if there is one.
@@ -45,10 +53,18 @@ func Load(envFile string) (Settings, error) {
 		DatabaseURL: value("DATABASE_URL", ""),
 		APIAddr:     value("API_ADDR", "127.0.0.1:8080"),
 		WebOrigin:   strings.TrimRight(value("WEB_ORIGIN", LocalWebOrigin), "/"),
+
+		SampleVideoID: value("SAMPLE_VIDEO_ID", ""),
+		YTDLPCookies:  value("YTDLP_COOKIES", ""),
 	}
 	if err := settings.LogLevel.UnmarshalText([]byte(value("LOG_LEVEL", "info"))); err != nil {
 		return Settings{}, errors.New("LOG_LEVEL must be debug, info, warn or error")
 	}
+	totalCap, err := strconv.Atoi(value("TOTAL_DAILY_CAP", "0"))
+	if err != nil || totalCap < 0 {
+		return Settings{}, errors.New("TOTAL_DAILY_CAP must be a whole number, 0 for no cap")
+	}
+	settings.TotalDailyCap = totalCap
 	return settings, nil
 }
 

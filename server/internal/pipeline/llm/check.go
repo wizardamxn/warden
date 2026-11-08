@@ -148,16 +148,17 @@ func CheckFlashcards(cards []notes.Flashcard, durationSeconds int, lines []capti
 	return c.problems
 }
 
-// CheckQuiz lists everything wrong with a lecture's quiz.
-func CheckQuiz(quiz []notes.Question, durationSeconds int, lines []captions.Line) []string {
+// CheckQuiz lists everything wrong with a lecture's quiz. types are the
+// template's question types: each one is needed, and no other is allowed.
+func CheckQuiz(quiz []notes.Question, types []string, durationSeconds int, lines []captions.Line) []string {
 	c := newChecker(lines)
 	c.count("quiz", len(quiz), targetCount(durationSeconds, secondsPerQuestion, minQuestions, maxQuestions), minQuestions, maxQuestions)
 
-	missing := slices.Clone(quizTypes)
+	missing := slices.Clone(types)
 	for i, question := range quiz {
 		name := fmt.Sprintf("quiz[%d]", i)
-		if !slices.Contains(quizTypes, question.Type) {
-			c.add("%s.type %q must be one of %s", name, question.Type, strings.Join(quizTypes, ", "))
+		if !slices.Contains(types, question.Type) {
+			c.add("%s.type %q must be one of %s", name, question.Type, strings.Join(types, ", "))
 		}
 		missing = slices.DeleteFunc(missing, func(t string) bool { return t == question.Type })
 		c.required(name+".question", question.Question)
